@@ -64,7 +64,7 @@ if (isSafeMode) {
 }
 
 if (isFreshProfile) {
-  app.setPath('userData', path.join(app.getPath('appData'), 'ZezenexCoderr-TestProfile'));
+  app.setPath('userData', path.join(app.getPath('appData'), 'ZenexCoder-TestProfile'));
 }
 
 let mainWindow;
@@ -206,7 +206,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'ZezenexCoderr',
+    title: 'ZenexCoder',
     backgroundColor: '#0d0d0d',
     show: false,
     webPreferences: {

@@ -67,7 +67,7 @@ export default function VisualPreviewPanel({ htmlOrJsxCode = '', onClose, onAppl
             className="w-full h-full border-0 bg-slate-900"
             title="Generated UI Live Preview"
             srcDoc={iframeSrcDoc}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
           />
         ) : (
           <textarea

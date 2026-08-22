@@ -86,3 +86,36 @@ export function enforcePolicies(text = '') {
   }
   return { ok: true };
 }
+
+export function extractNpmPackages(command = '') {
+  const match = String(command || '').match(/(?:npm\s+(?:i|install)|pnpm\s+(?:add|install)|yarn\s+add)\s+([^&|;]+)/i);
+  if (!match || !match[1]) return [];
+  return match[1]
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s && !s.startsWith('-') && !s.startsWith('.'));
+}
+
+export async function verifyNpmPackage(packageName = '') {
+  if (!packageName || typeof packageName !== 'string') return { valid: true };
+  const cleanName = packageName.trim().replace(/^@?[^a-z0-9_.-]/i, '');
+  if (!cleanName || cleanName.startsWith('-')) return { valid: true };
+
+  try {
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(cleanName)}`, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(3500)
+    });
+    if (res.status === 404) {
+      return {
+        valid: false,
+        packageName: cleanName,
+        reason: 'hallucinated_package',
+        message: `Supply Chain Risk: Package "${cleanName}" does not exist on the NPM registry (404 Not Found). This is likely an AI hallucination or squatted package.`
+      };
+    }
+    return { valid: true, packageName: cleanName };
+  } catch (err) {
+    return { valid: true, packageName: cleanName, warning: 'registry_timeout' };
+  }
+}

@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { buildProjectEnvironment } from './environmentHandler.js';
 import { sandboxIsEnabled, sandboxRunCommand } from './sandboxHandler.js';
-import { enforcePolicies } from './policyEnforcer.js';
+import { enforcePolicies, extractNpmPackages, verifyNpmPackage } from './policyEnforcer.js';
 
 const terminals = new Map();
 let selectedShellPath = '';
@@ -120,6 +120,15 @@ export function registerTerminalHandlers() {
     const policy = enforcePolicies(command);
     if (!policy.ok) {
       throw new Error(policy.message);
+    }
+
+    // Supply Chain Defense: Verify packages exist on NPM before running install
+    const npmPkgs = extractNpmPackages(command);
+    for (const pkg of npmPkgs) {
+      const verify = await verifyNpmPackage(pkg);
+      if (!verify.valid) {
+        throw new Error(verify.message);
+      }
     }
 
     try {

@@ -2,7 +2,7 @@
   "name": "zenexcoder",
   "version": "1.0.0",
   "description": "AI-Powered Developer Environment",
-  "author": "ZezenexCoderr",
+  "author": "ZenexCoder",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {

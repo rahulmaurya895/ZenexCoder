@@ -9,6 +9,8 @@ import { ragContextForPrompt } from './vectorDbHandler.js';
 import { ClusterOffloadError, isClusterOllamaEnabled, streamOllamaChatViaCluster } from './websocketClient.js';
 import { learningContextForPrompt } from './learningHandler.js';
 
+import { validateSafePath } from './fileHandler.js';
+
 const activeRuns = new Map();
 const shadowResultResolvers = new Map();
 
@@ -25,16 +27,24 @@ async function autoWritePlanFiles(executionPlan, projectPath) {
     const isFileWrite = ['file_write', 'create_file', 'write_file'].includes(step.actionType) || (step.filePath && step.content != null && String(step.content).trim());
     if (isFileWrite && step.filePath) {
       try {
-        const fullPath = path.isAbsolute(step.filePath) ? step.filePath : path.join(targetDir, step.filePath);
-        await fs.mkdir(path.dirname(fullPath), { recursive: true });
-        await fs.writeFile(fullPath, step.content || '', 'utf8');
+        const rawPath = path.isAbsolute(step.filePath) ? step.filePath : path.join(targetDir, step.filePath);
+        const fullPath = validateSafePath(rawPath);
+        const targetDirName = path.dirname(fullPath);
+        await fs.mkdir(targetDirName, { recursive: true });
+
+        // Atomic File Write Pattern: Write to isolated temp file first, then atomically rename
+        const tempPath = path.join(targetDirName, `.${path.basename(fullPath)}.${crypto.randomUUID()}.tmp`);
+        await fs.writeFile(tempPath, step.content || '', 'utf8');
+        await fs.rename(tempPath, fullPath);
+
         sendToAll('file:saved', { filePath: fullPath, content: step.content || '', savedAt: Date.now() });
       } catch (err) {
         console.warn('Swarm auto-write error:', err.message);
       }
     } else if (step.actionType === 'create_directory' && step.filePath) {
       try {
-        const fullPath = path.isAbsolute(step.filePath) ? step.filePath : path.join(targetDir, step.filePath);
+        const rawPath = path.isAbsolute(step.filePath) ? step.filePath : path.join(targetDir, step.filePath);
+        const fullPath = validateSafePath(rawPath);
         await fs.mkdir(fullPath, { recursive: true });
       } catch (err) {
         console.warn('Swarm mkdir error:', err.message);

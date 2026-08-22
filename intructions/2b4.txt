@@ -1,0 +1,258 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 4 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART3_BUILD_INSTRUCTIONS.txt
+   THEME: "MCP SERVERS" — Registry, Add/Connect/Configure UI
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Part 1-3 built: Connections Hub, Git Integration Core, Worktrees, Branch 
+Management, and Environments (Env var manager & runtime injection).
+Part 4 SCOPE (build now):
+  1. MCP (Model Context Protocol) Server Registry — add, edit, delete, 
+     and persist configurations for external MCP servers.
+  2. MCP Connection Lifecycle — spawn MCP server processes (using stdio 
+     transport), maintain the connection, and handle connection errors/restarts.
+  3. MCP UI Panel — list configured servers, show real-time connection status 
+     (Connecting, Connected, Error), and display the list of "Tools" and 
+     "Resources" exposed by a successfully connected server.
+  4. Connections Hub Wiring — flip 'mcp_servers' card from 'coming_soon' 
+     to 'available'.
+
+DO NOT implement: The actual invocation of these MCP tools by the AI agent.
+Part 4 only establishes the connection and fetches the available tool list 
+so the user can see them. Part 5 will wire these exposed tools into the 
+OpenAI/Anthropic/Ollama function-calling payloads.
+DO NOT implement: Browser integration, Computer use, Hooks, Agent env, 
+terminal shell selector, popout window, dictation, or notifications.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC — not a static label.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 4 ONLY)
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   └── mcp/
+│       ├── MCPServersPanel.jsx       (Full panel: list of servers, detail
+│       │                               view, add/edit form)
+│       ├── MCPServerCard.jsx         (Single server: name, command, status
+│       │                               indicator dot, Connect/Disconnect btn)
+│       ├── MCPServerForm.jsx         (Form to configure Command, Args, 
+│       │                               Env Vars for the MCP process)
+│       └── MCPToolList.jsx           (Read-only list of tools/resources 
+│                                       fetched from the connected server)
+│
+├── store/
+│   └── mcpStore.js                   (Server configs, connection states, 
+│                                       available tools list)
+│
+└── hooks/
+    └── useMCP.js                     (Wraps mcpHandler IPC calls, connection
+                                        status listeners)
+
+electron/handlers/
+└── mcpHandler.js                     (Uses @modelcontextprotocol/sdk/client,
+                                        spawns child processes, handles stdio
+                                        RPC transport, persists configs)
+
+================================================================================
+SECTION 2: MCP SERVER CONFIGURATIONS & LIFECYCLE
+================================================================================
+
+Goal: Let the user configure and connect local MCP servers (e.g., SQLite, 
+Postgres, GitHub, Slack) that the AI will later use as tools.
+
+2.1 Data Model
+  MCPServerConfig object (persisted globally in electron-store, NOT per-project):
+    {
+      id: string,               // uuid
+      name: string,             // "Local SQLite Database"
+      command: string,          // "npx" or "node" or "python"
+      args: string[],           // ["-y", "@modelcontextprotocol/server-postgres", "postgres://..."]
+      env: Record<string, string>, // { "GITHUB_TOKEN": "ghp_..." }
+      autoStart: boolean,       // Connect automatically when app launches
+      createdAt: number,
+      updatedAt: number
+    }
+
+  MCPConnectionState:
+    'disconnected' | 'connecting' | 'connected' | 'error'
+
+2.2 mcpStore.js
+  {
+    servers: MCPServerConfig[],
+    connectionStates: Record<serverId, MCPConnectionState>,
+    serverErrors: Record<serverId, string>,
+    serverTools: Record<serverId, MCPTool[]>, // Fetched after connection
+    
+    // Actions
+    loadServers(),
+    addServer(config),
+    updateServer(id, patch),
+    deleteServer(id),
+    connectServer(id),
+    disconnectServer(id),
+  }
+
+2.3 mcpHandler.js (electron/handlers/)
+  Requires installing MCP SDK in package.json:
+  `npm install @modelcontextprotocol/sdk`
+
+  IPC-exposed functions:
+    - mcpListServers() -> MCPServerConfig[]
+    - mcpAddServer(config)
+    - mcpUpdateServer(id, patch)
+    - mcpDeleteServer(id) -> disconnects first if running
+    - mcpConnect(id) -> 
+        1. Reads config.
+        2. Injects custom env vars over process.env.
+        3. Initializes `Client` with `StdioClientTransport` from the MCP SDK.
+        4. Spawns the process.
+        5. Calls `client.connect()`.
+        6. Calls `client.listTools()` and stores the result.
+        7. Emits IPC event 'mcp:status-changed'.
+    - mcpDisconnect(id) -> kills process cleanly, cleans up client.
+
+  Auto-start: On Electron app `ready`, loop through servers where 
+  `autoStart === true` and trigger `mcpConnect(id)`.
+
+================================================================================
+SECTION 3: MCP UI PANEL
+================================================================================
+
+3.1 MCPServersPanel.jsx (Slide-over or full view in Connections Hub)
+  Layout matches EnvironmentsPanel (Part 3):
+    Left column (240px): 
+      - List of MCPServerCards.
+      - "+ Add MCP Server" button.
+    Right column (flex-1): 
+      - If adding/editing: shows MCPServerForm.
+      - If viewing: shows server details, Connect/Disconnect toggle, and 
+        MCPToolList showing available capabilities.
+
+3.2 MCPServerCard.jsx
+  - Shows name and muted command snippet.
+  - Status indicator (dot):
+      Disconnected: Text Muted (#52525B)
+      Connecting: Warning amber (#F59E0B) with pulse animation
+      Connected: Success green (#22C55E)
+      Error: Error red (#EF4444)
+  - Hover shows "Delete" trash icon.
+
+3.3 MCPServerForm.jsx
+  Fields:
+    - Name (required)
+    - Command (required, e.g., 'npx', 'python', 'docker')
+    - Arguments (dynamic list of text inputs, user can + / - args)
+    - Environment Variables (Editable KEY=VALUE table, reuse logic from 
+      EnvVarTable in Part 3 but keep it scoped to this component; must support 
+      masking secrets).
+    - Auto-start checkbox.
+  Buttons: [Save & Connect] [Cancel]
+
+3.4 MCPToolList.jsx
+  - Rendered only when connectionState === 'connected'.
+  - Shows a grid or table of tools returned by the server.
+  - Each tool shows: Name, Description, and a muted JSON schema preview of 
+    its required parameters.
+  - Show a banner at the top: "These tools will be automatically available 
+    to the AI agent when running tasks."
+
+================================================================================
+SECTION 4: DATABASE SCHEMA & STORAGE
+================================================================================
+
+Store MCPServerConfig globally using `electron-store` with safeStorage 
+encryption (specifically to protect the `env` field which often contains 
+API keys for the servers).
+Key structure in electron-store:
+  'mcp.servers' -> MCPServerConfig[]
+
+Do not store connection state or tools list in the database; those are 
+in-memory only and resolved at runtime.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 4)
+================================================================================
+
+  'mcp:list'             renderer -> main  () -> MCPServerConfig[]
+  'mcp:add'              renderer -> main  (config)
+  'mcp:update'           renderer -> main  ({ id, patch })
+  'mcp:delete'           renderer -> main  ({ id })
+  'mcp:connect'          renderer -> main  ({ id })
+  'mcp:disconnect'       renderer -> main  ({ id })
+  'mcp:status-changed'   main -> renderer  ({ id, status, tools?, error? })
+                         // Emitted when connection succeeds, fails, or drops.
+
+================================================================================
+SECTION 6: CONNECTIONS HUB WIRING (PART 4)
+================================================================================
+
+Flip the 'mcp_servers' entry in connectionRegistry.js from 'coming_soon' 
+to 'available':
+  {
+    id: 'mcp_servers',
+    name: 'MCP Servers',
+    description: 'Connect external tool servers via Model Context Protocol',
+    icon: 'Server',
+    status: 'available',
+    settingsRoute: MCPServersPanel
+  }
+
+Ensure the ConnectionCard "Configure" button opens the MCPServersPanel.
+
+================================================================================
+SECTION 7: UI DESIGN ADDITIONS (PART 4)
+================================================================================
+
+Reuse Phase 1/2A/2B palette.
+MCPServerCard: Surface2 bg, Border outline, 8px radius. Active state border 
+left is Primary (#7C3AED).
+Tool Card (inside MCPToolList): Surface bg, 1px Border, mono-spaced font for 
+parameter names.
+
+================================================================================
+SECTION 8: IMPLEMENTATION ORDER (PART 4)
+================================================================================
+
+1. Add `@modelcontextprotocol/sdk` to package.json and run `npm install`.
+2. mcpHandler.js (electron) — Implement store persistence and stdio client 
+   connection logic.
+3. Register new IPC channels in main.js and preload.js.
+4. mcpStore.js + useMCP.js (React state).
+5. MCPServerCard.jsx and MCPServerForm.jsx (UI construction).
+6. MCPToolList.jsx.
+7. MCPServersPanel.jsx (Assemble layout).
+8. connectionRegistry.js — flip to 'available'.
+9. End-to-end test:
+   - Configure a simple public MCP server (e.g., `npx -y @modelcontextprotocol/server-everything`).
+   - Click "Connect".
+   - Verify status goes Connecting -> Connected.
+   - Verify `MCPToolList` populates with the tools exported by the test server.
+   - Disconnect and ensure the process is killed cleanly.
+
+================================================================================
+SECTION 9: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B-Part1-3 codebase.
+2. DO NOT implement the tool calling loop for the AI. Just fetch `client.listTools()` 
+   and display them.
+3. Ensure child processes spawned via `mcpConnect` are properly killed when 
+   `mcpDisconnect` is called, or when the Electron app quits. Handle the 
+   `process.on('exit')` cleanup in `mcpHandler.js`.
+4. Use safeStorage for the `env` dictionary inside the server config to 
+   protect tokens.
+
+START BUILDING NOW. FOLLOW SECTION 8 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 4 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART5_BUILD_INSTRUCTIONS.txt (MCP Servers — tool 
+invocation + agent/permissions integration)
+================================================================================

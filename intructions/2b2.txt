@@ -1,0 +1,324 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 2 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART1_BUILD_INSTRUCTIONS.txt
+   THEME: "GIT WORKTREES + BRANCH MANAGEMENT"
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Part 1 built: Connections Hub (registry shell) + Git Integration Core
+(status, branch switch/create, stage/unstage, commit, diff, log) via
+GitPanel.jsx, GitBranchSwitcher.jsx, GitStatusBadge.jsx, gitHandler.js,
+gitStore.js, useGit.js.
+
+Part 2 SCOPE (build now):
+  1. Git Worktrees — list, create, open, remove worktrees for the current
+     repo; each worktree behaves like a linked "project" the user can
+     switch to.
+  2. Branch Management UI upgrade — rename branch, delete branch (local +
+     remote), merge branch into current, view branch graph (simple list +
+     ahead/behind), set upstream.
+  3. Push / Pull / Fetch — toolbar in GitPanel, wired to remote, with
+     Phase 2A permission gating (push = always-approval, fetch/pull =
+     medium/follows mode).
+
+DO NOT implement: Environments, MCP Servers, Browser integration,
+Computer use, Hooks, Agent environment selector, terminal shell selector,
+popout window, dictation, notification center. Those are Parts 3, 4–5,
+6, 7, 8, 9, 9, 10 respectively. Leave their connectionRegistry entries as
+'coming_soon'.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC — not a static label.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 2 ONLY)
+================================================================================
+
+src/
+├── components/
+│   └── git/
+│       ├── WorktreePanel.jsx         (List of worktrees for current repo +
+│       │                               "Add worktree" form)
+│       ├── WorktreeCard.jsx          (Single worktree: path, branch,
+│       │                               status, Open/Remove buttons)
+│       ├── BranchManager.jsx         (Full branch list w/ rename, delete,
+│       │                               merge, set-upstream actions —
+│       │                               replaces the simple dropdown
+│       │                               contents of GitBranchSwitcher with
+│       │                               a richer "Manage branches" view)
+│       ├── GitSyncBar.jsx            (Push/Pull/Fetch buttons + ahead/
+│       │                               behind counts, placed in GitPanel
+│       │                               header)
+│       └── MergeDialog.jsx           (Confirm merge: shows target branch,
+│                                       conflict warning if detected)
+│
+├── store/
+│   └── worktreeStore.js              (List of worktrees, active worktree,
+│                                       add/remove/refresh)
+│
+└── hooks/
+    └── useWorktrees.js               (Wraps worktree IPC calls)
+
+electron/handlers/
+└── gitHandler.js                     (EXTEND from Part 1, add: worktree
+                                        list/add/remove, push, pull, fetch,
+                                        merge, branch rename/delete,
+                                        set-upstream, conflict detection)
+
+================================================================================
+SECTION 2: GIT WORKTREES
+================================================================================
+
+Goal: let the user create additional working directories linked to the
+same repo (different branches checked out simultaneously), and switch
+NexCode's active project to one of them — useful for running an agent
+task on a feature branch while keeping main checked out elsewhere.
+
+2.1 gitHandler.js additions
+    - gitWorktreeList(projectPath)
+        -> uses `git worktree list --porcelain`
+        -> returns [{ path, branch, head, isMain, isLocked, prunable }]
+    - gitWorktreeAdd(projectPath, { newPath, branchName, createBranch,
+        fromRef })
+        -> `git worktree add [-b branchName fromRef] newPath [branchName]`
+        -> validate newPath is outside any existing worktree path and is
+           an absolute path the user has write access to
+    - gitWorktreeRemove(projectPath, worktreePath, { force })
+        -> `git worktree remove [--force] worktreePath`
+        -> ALWAYS classify as 'git_destructive' (Phase 2A floor) —
+           requires approval even in Full access mode
+    - gitWorktreePrune(projectPath) -> `git worktree prune`
+
+2.2 worktreeStore.js
+    {
+      worktrees: Worktree[],
+      activeWorktreePath: string,
+      refresh(),
+      add({ newPath, branchName, createBranch, fromRef }),
+      remove(worktreePath, { force }),
+      openInNexCode(worktreePath)   // see 2.4
+    }
+
+2.3 WorktreePanel.jsx (new sub-tab inside GitPanel, or accessible via the
+    "Worktrees" card in Connections Hub — flip its status to 'available'
+    in connectionRegistry.js and point settingsRoute here)
+    - List of WorktreeCard.jsx, one per worktree (main worktree marked
+      "(main)" and cannot be removed)
+    - "+ Add worktree" form:
+        - Path picker (use existing Phase 1 folder-picker dialog)
+        - Branch: dropdown of existing branches OR "create new branch
+          from <ref>" with text input
+        - Submit -> gitWorktreeAdd -> refresh list
+    - Each WorktreeCard shows: folder path (truncated, full path on
+      hover), branch name, locked icon if isLocked, "Open" and "Remove"
+      buttons
+        - "Open" -> worktreeStore.openInNexCode(path) (see 2.4)
+        - "Remove" -> confirm dialog (since git_destructive) -> shows
+          Phase 2A ApprovalRequest card if status === 'pending_review' is
+          required by current permission mode; on approval ->
+          gitWorktreeRemove
+
+2.4 "Open in NexCode" behavior
+    - Reuses Phase 1's project-switching mechanism: adds the worktree path
+      as a project entry in projectStore (Phase 1) if not already present,
+      then switches the active project to it (same as opening any other
+      folder). File Tree / Editor / Terminal / GitPanel all re-point to
+      the new path.
+    - Leave a TODO comment: "Phase 2B Part 9 may allow opening this in a
+      separate popout window instead of switching the current window."
+      Do not implement the popout itself here.
+
+================================================================================
+SECTION 3: BRANCH MANAGEMENT UPGRADE
+================================================================================
+
+3.1 gitHandler.js additions
+    - gitBranchRename(projectPath, oldName, newName)
+        -> `git branch -m oldName newName`; if oldName has upstream, warn
+           user upstream is not auto-renamed (surface this in UI, do not
+           auto-push a rename)
+    - gitBranchDelete(projectPath, branchName, { remote: boolean, force })
+        -> local: `git branch [-D|-d] branchName`
+        -> remote: `git push origin --delete branchName`
+        -> ALWAYS classify as 'git_destructive'
+    - gitSetUpstream(projectPath, branchName, remoteRef)
+        -> `git branch --set-upstream-to=remoteRef branchName`
+    - gitMerge(projectPath, sourceBranch)
+        -> `git merge sourceBranch --no-edit`
+        -> on conflict, abort cleanly (`git merge --abort`) and return
+           { conflict: true, files: [...] } rather than leaving the repo
+           in a half-merged state without telling the UI
+        -> classify as 'git_destructive' if current branch has
+           uncommitted changes that could be affected; otherwise
+           'medium' (file_write-equivalent)
+
+3.2 BranchManager.jsx
+    - Replaces/extends GitBranchSwitcher's dropdown with a full list view
+      (opened via "Manage branches" link at bottom of the dropdown):
+        - Each row: branch name, ahead/behind vs upstream, upstream name
+          (or "no upstream" badge), action icons:
+            - Checkout (if not current)
+            - Rename (inline edit)
+            - Set upstream (opens small dropdown of remote refs)
+            - Delete (confirm dialog; remote checkbox if upstream exists)
+            - Merge into current (only shown for non-current branches;
+              opens MergeDialog.jsx)
+    - Current branch row is pinned at top, highlighted with Primary
+      left-border (#7C3AED).
+
+3.3 MergeDialog.jsx
+    - Shows: "Merge <source> into <current>?"
+    - On confirm -> gitMerge
+    - If result.conflict === true:
+        - Show conflict file list, message: "Merge aborted due to
+          conflicts in N files. Resolve manually in the editor, or try a
+          different branch."
+        - Do NOT attempt automatic conflict resolution.
+
+================================================================================
+SECTION 4: PUSH / PULL / FETCH
+================================================================================
+
+4.1 gitHandler.js additions
+    - gitFetch(projectPath, { remote = 'origin' })
+        -> `git fetch remote`; classify 'low'/'medium' (network_request +
+           read), follows permission mode, never destructive
+    - gitPull(projectPath, { remote, branch })
+        -> `git pull remote branch`; classify 'medium', follows mode;
+           if local changes would be overwritten, abort and return
+           { needsStash: true } — do not auto-stash without telling user
+    - gitPush(projectPath, { remote, branch, force })
+        -> `git push remote branch [--force-with-lease if force]`
+        -> ALWAYS classify as 'git_push' / 'git_destructive' (Phase 2A
+           floor) — requires approval regardless of mode
+        -> force push additionally requires the user to type the branch
+           name to confirm (extra friction for destructive force-push)
+
+4.2 GitSyncBar.jsx (placed in GitPanel header, next to branch name)
+    - Three buttons: Fetch (refresh icon), Pull (down-arrow), Push
+      (up-arrow), each showing a small badge with ahead/behind counts
+      where relevant
+    - Pull/Push trigger the Phase 2A ApprovalRequest flow per the rules
+      above; on approval, call respective IPC and show a toast on
+      success/failure (reuse Phase 2A 'notify:show' channel — but do NOT
+      build the full Notification Center UI here, just emit the event;
+      Part 10 builds the center that lists/manages these)
+    - If gitPull returns needsStash: true, show a small inline choice:
+      "Stash changes and pull" / "Cancel" — stash via `git stash` /
+      `git stash pop` (classify stash as 'medium')
+
+================================================================================
+SECTION 5: DATABASE SCHEMA ADDITIONS
+================================================================================
+
+No new tables. Extend approvals_log usage (from Phase 2A) — worktree
+remove, branch delete, merge-with-destructive-risk, and push/force-push
+all log through the existing approvals_log table with
+action_type in: 'git_destructive', 'git_push'.
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PART 2)
+================================================================================
+
+  'git:worktree-list'      renderer -> main
+  'git:worktree-add'       renderer -> main  ({ newPath, branchName,
+                                                 createBranch, fromRef })
+  'git:worktree-remove'    renderer -> main  ({ worktreePath, force })
+  'git:branch-rename'      renderer -> main  ({ oldName, newName })
+  'git:branch-delete'      renderer -> main  ({ branchName, remote, force })
+  'git:set-upstream'       renderer -> main  ({ branchName, remoteRef })
+  'git:merge'              renderer -> main  ({ sourceBranch })
+  'git:fetch'              renderer -> main  ({ remote })
+  'git:pull'               renderer -> main  ({ remote, branch })
+  'git:push'               renderer -> main  ({ remote, branch, force })
+  'git:stash'              renderer -> main  ({ action: 'push'|'pop' })
+
+================================================================================
+SECTION 7: UI DESIGN ADDITIONS (PART 2)
+================================================================================
+
+Reuse Phase 1/2A/2B-Part1 palette.
+
+  WorktreeCard:
+    - Surface2 bg, Border outline, 8px radius
+    - Branch name pill: Primary text on rgba(124,58,237,0.12) bg
+    - "(main)" worktree: Remove button hidden/disabled, shows muted
+      "Main worktree" label instead
+
+  BranchManager rows:
+    - Current branch: left border 3px Primary
+    - Ahead/behind counts: small up/down arrows, Success green for ahead,
+      Warning amber for behind
+    - Delete action icon: Error red, requires confirm dialog with Error
+      border (reuse Phase 2A ApprovalRequest styling for destructive
+      confirms)
+
+  GitSyncBar buttons:
+    - Default state: Text Secondary icon
+    - Pending approval state: Warning amber icon + small spinner
+    - Success: brief Success green flash (300ms) then back to default
+    - Error: Error red icon + tooltip with error message
+
+  MergeDialog conflict state:
+    - Border-left 3px Error, Surface2 bg, lists conflicted files with
+      Error-colored file icons
+
+================================================================================
+SECTION 8: IMPLEMENTATION ORDER (PART 2)
+================================================================================
+
+1. gitHandler.js — implement worktree list/add/remove, branch rename/
+   delete/set-upstream, merge, fetch/pull/push, stash. Test each against
+   a real repo with multiple branches before wiring UI.
+2. worktreeStore.js + useWorktrees.js
+3. WorktreePanel.jsx + WorktreeCard.jsx; flip 'worktrees' card in
+   connectionRegistry.js (Part 1) to 'available' with this as settingsRoute
+4. "Open in NexCode" wiring via existing projectStore (Phase 1)
+5. BranchManager.jsx (rename, delete, set-upstream) -> link from
+   GitBranchSwitcher "Manage branches"
+6. MergeDialog.jsx + gitMerge wiring, including conflict-abort path
+7. GitSyncBar.jsx + fetch/pull/push wiring through Phase 2A approval flow
+8. Stash-on-pull-conflict inline flow
+9. End-to-end test:
+     - Create a worktree on a new branch, open it, confirm File Tree/
+       Editor/Terminal/Git status all reflect the new path and branch
+     - Remove a worktree -> approval required regardless of permission
+       mode -> removed from list
+     - Rename a branch, set upstream, delete a branch (local + remote)
+     - Merge a feature branch into main with no conflicts -> success;
+       repeat with a conflicting branch -> clean abort + file list shown
+     - Fetch/Pull/Push: push always requires approval; pull with local
+       changes offers stash; force-push requires typed confirmation
+
+================================================================================
+SECTION 9: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of the EXISTING Phase 1 + 2A + 2B-Part1 codebase — do not
+   regenerate working files; extend gitHandler.js, gitStore.js, GitPanel.jsx,
+   GitBranchSwitcher.jsx in place.
+
+2. Every destructive operation (worktree remove, branch delete, force
+   push) MUST hit the Phase 2A approval flow — this floor is HARD-CODED
+   and cannot be bypassed by permission mode, per Phase 2A Section 15.
+
+3. Never auto-stash, auto-abort-with-data-loss, or force operations
+   without explicit user action — always surface the choice in the UI.
+
+4. Do NOT implement Environments, MCP Servers, Browser, Computer Use,
+   Hooks, Agent Environment selector, terminal shell selector, popout
+   window, dictation, or notification center in this file — those are
+   Parts 3–10. Only emit 'notify:show' events for push/pull/fetch results;
+   do not build the Notification Center UI.
+
+5. Follow the existing dark/light theme variables — do not hardcode new
+   colors outside the palette in Section 7.
+
+START BUILDING NOW. FOLLOW SECTION 8 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 2 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART3_BUILD_INSTRUCTIONS.txt (Environments —
+per-project env configs, runtime/interpreter selection, env var manager)
+================================================================================

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+*.tgz
+-Pattern
+node-pty@1.1.0
+tsc
+*.log
+.DS_Store

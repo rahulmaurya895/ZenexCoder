@@ -1,0 +1,187 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 3 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "SPECULATIVE EXECUTION" (Zero-Latency Time Travel)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 3 Parts 1 and 2 built the Multi-Agent Swarm and the Semantic Knowledge Graph.
+Phase 3 SCOPE (build now):
+  1. The Speculative Watcher — Monitor the user's cursor, recent file changes, 
+     and uncommitted Git diffs to predict their next goal.
+  2. Shadow Swarm Runs — Launch the AI Swarm silently in the background 
+     while the user is reading or thinking, without blocking the UI.
+  3. Pre-computation Cache — Store the background-generated code and plans 
+     temporarily in a specialized fast-access memory state.
+  4. Ghost Text & Instant Diff UI — Inject the pre-computed results directly 
+     into the Monaco Editor as ghost text (like Copilot) or instant Review 
+     Panels the second the user types a matching prompt.
+
+DO NOT implement: Self-Healing, Hardware Clustering, or Realtime Audio. 
+Those are Parts 4-6.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS SPECULATIVE EXECUTION?
+In standard AI IDEs, you type a prompt ("Fix this error"), hit Enter, and then 
+stare at a loading spinner for 30 seconds while the AI thinks. That is slow.
+
+Speculative Execution is how modern CPUs work. The IDE "guesses" what you are 
+going to do next based on your current context. 
+Example: You paste an error log into the terminal. Before you even open the 
+Chat Panel to ask "How do I fix this?", the NexCode Speculative Watcher has 
+already noticed the error, silently sent it to the Swarm, and the Swarm has 
+already written the fix. 
+When you finally press Ctrl+Space or open the chat, the answer appears in 
+0.01 seconds. It feels like time travel because the AI solved the problem 
+in the past.
+
+HARDWARE CONSTRAINT:
+Running a Swarm in the background can freeze a computer. The Speculative Watcher 
+MUST check the CPU/RAM idle state. It only triggers a "Shadow Run" if the user 
+has stopped typing for at least 3 seconds, and it immediately aborts the shadow 
+run if the user starts heavily compiling or running local servers.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 3)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   ├── editor/
+│   │   └── GhostTextOverlay.jsx      (Renders inline grayed-out code suggestions)
+│   └── settings/
+│       └── SpeculativeSettings.jsx   (Settings to control background CPU usage)
+│
+├── store/
+│   └── speculativeStore.js           (Holds the cache of pre-computed shadow runs)
+│
+└── hooks/
+    └── useSpeculativeEngine.js       (Monitors Monaco editor cursor & terminal)
+
+electron/handlers/
+└── speculativeHandler.js             (CPU usage monitor & shadow task scheduler)
+
+================================================================================
+SECTION 2: THE SPECULATIVE WATCHER
+================================================================================
+
+Goal: Identify "High-Probability Intents" without user input.
+
+2.1 useSpeculativeEngine.js (src/hooks/)
+  Attach listeners to the existing `projectStore` and `CodeEditor.jsx`.
+  Define triggers that kick off a Shadow Run:
+  - Trigger A (The TODO): User types `// TODO: ` or `# FIXME: ` and pauses 
+    for 2000ms.
+  - Trigger B (The Error): Terminal outputs a stack trace (Regex match on `Error:` 
+    or `Exception` in Phase 1's `Terminal.jsx`).
+  - Trigger C (The Paste): User pastes a large block of code and pauses.
+  - Trigger D (The Selection): User highlights a block of code and pauses 
+    for 3000ms.
+
+2.2 Intent Construction
+  When a trigger fires, silently construct a prompt payload:
+  `{ intentType: 'error_fix', context: terminalErrorText, filePath: activeFile }`
+  Pass this to `speculativeHandler.js` via IPC.
+
+================================================================================
+SECTION 3: SHADOW SWARM RUNS & CPU YIELDING
+================================================================================
+
+Goal: Run the AI invisibly, but respect the user's hardware.
+
+3.1 speculativeHandler.js (electron/handlers/)
+  - Require Node's `os` module to check `os.loadavg()` and `os.freemem()`.
+  - If CPU usage is > 70%, ABORT the shadow run (do not steal resources).
+  - If safe, dispatch the intent to `swarmHandler.js` (from Part 1) but flag 
+    it as `isShadowRun: true`.
+  
+3.2 Shadow Swarm Adjustments
+  - When `isShadowRun === true`, the Swarm does NOT emit `swarm:internal-msg` 
+    events to the UI. The SwarmChatPanel remains completely empty.
+  - The Swarm skips the "User Approval" handoff. Instead, it packages the 
+    final Consensus (Code + Plan) and emits a `speculative:cache-ready` event.
+
+3.3 speculativeStore.js
+  - Receives the `cache-ready` event.
+  - Stores it: 
+    ```js
+    cache: { 
+      [triggerHash]: { 
+        code: "function new()...", 
+        explanation: "Fixed the null pointer...",
+        timestamp: 169000000 
+      } 
+    }
+    ```
+
+================================================================================
+SECTION 4: GHOST TEXT & INSTANT DIFF UI
+================================================================================
+
+Goal: Serve the pre-computed answer instantly when the user asks for it.
+
+4.1 GhostTextOverlay.jsx (Monaco Editor Integration)
+  - If the user's cursor is at the exact line where a `triggerHash` was generated 
+    (e.g., right after `// TODO: create user auth`), query `speculativeStore`.
+  - If a cached result exists, use Monaco's `inlineCompletions` API to render 
+    the code in italic, grayed-out text ahead of the cursor.
+  - If user presses `Tab`, instantly accept the code and clear the cache.
+
+4.2 Instant Chat Resolution
+  - If the user opens the Chat Panel and types: "Fix the terminal error", 
+    the Chat Input will hash the prompt, check `speculativeStore`, and if a 
+    match exists (e.g., an error was just cached from Trigger B), it Bypasses 
+    the LLM entirely.
+  - Instantly print the cached Swarm response to the Chat Panel (0ms latency) 
+    and show the Phase 2A Review Button.
+  - Add a tiny visual badge to the message: "⚡ Served from Predictive Cache".
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 3)
+================================================================================
+
+  'speculative:trigger'      renderer -> main  ({ intent, context })
+  'speculative:abort'        renderer -> main  // Fired if user starts typing again
+  'speculative:cache-ready'  main -> renderer  ({ triggerHash, result })
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER
+================================================================================
+
+1. speculativeHandler.js — Implement OS resource checking logic so we never 
+   lag the user's computer.
+2. Modify swarmHandler.js to accept `isShadowRun` and suppress UI broadcasts.
+3. useSpeculativeEngine.js — Wire up the Debounced listeners to Monaco and the Terminal.
+4. speculativeStore.js — Build the cache manager.
+5. GhostTextOverlay.jsx — Connect the store to Monaco Editor's inline decorations/completions.
+6. ChatInput.jsx (Phase 1) — Add the cache-check bypass before sending prompts to the AI.
+7. SpeculativeSettings.jsx — Add UI toggles ("Enable Predictive Coding", "Max Memory Usage").
+8. End-to-end test:
+   - Type `// TODO: write a bubble sort function` and STOP touching the keyboard.
+   - Wait 5 seconds. Watch the console to verify the Shadow Swarm ran.
+   - Verify Ghost Text appears in the editor.
+   - Press Tab. Verify the code is applied instantly.
+
+================================================================================
+SECTION 7: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1, 2, and 3 (Parts 1-2) codebase.
+2. ABORT ON EDIT: This is the most important UX rule. If a shadow run is 
+   happening in the background, and the user types even a single letter in 
+   the editor, you MUST send `speculative:abort` to kill the Swarm process 
+   instantly. The user's active typing takes 100% priority over AI predictions.
+3. Cache invalidation: Clear `speculativeStore` whenever the user switches 
+   git branches or saves a file, as the predictive context is now stale.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 3 — PART 3 OF 6
+================================================================================

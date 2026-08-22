@@ -1,0 +1,693 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 3 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART2_BUILD_INSTRUCTIONS.txt
+   THEME: "ENVIRONMENTS" — Per-project env configs, runtime/interpreter
+   selection, environment variable manager
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Part 1 built: Connections Hub (registry shell) + Git Integration Core
+(status, branch switch/create, stage/unstage, commit, diff, log).
+Part 2 built: Git Worktrees (list/add/remove/open), Branch Management
+upgrade (rename, delete, merge, set-upstream), Push/Pull/Fetch with
+Phase 2A permission gating.
+
+Part 3 SCOPE (build now):
+  1. Environments Panel — create, switch, and delete named per-project
+     environment configurations (dev / staging / prod / custom).
+  2. Environment Variable Manager — add, edit, delete, import, export
+     .env files; secret masking; per-env variable overrides.
+  3. Runtime / Interpreter Selector — choose the Node.js version, Python
+     interpreter, Go binary, Java SDK, etc. used when the agent runs
+     terminal commands or executes code in this project.
+  4. Env Injection — automatically pass the active environment's variables
+     to every terminal command and agent-run step executed for the project.
+  5. Connections Hub wiring — flip 'environments' card from 'coming_soon'
+     to 'available'.
+
+DO NOT implement: MCP Servers, Browser integration, Computer use, Hooks,
+Agent environment selector (Windows native sandbox), terminal shell
+selector, popout window, dictation, or notification center. Those are
+Parts 4–10. Leave their connectionRegistry entries as 'coming_soon'.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC — not a static label.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 3 ONLY)
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   └── environments/
+│       ├── EnvironmentsPanel.jsx     (Full panel: list of envs, active
+│       │                               switcher, per-env detail view)
+│       ├── EnvironmentCard.jsx       (Single env: name, type badge, active
+│       │                               indicator, Edit/Activate/Delete)
+│       ├── EnvVarTable.jsx           (Editable table of KEY=VALUE rows —
+│       │                               add, edit, delete, mask toggle,
+│       │                               per-row source badge)
+│       ├── EnvImportExport.jsx       (Import from .env file / export to
+│       │                               .env; paste raw KEY=VALUE text)
+│       ├── RuntimeSelector.jsx       (Dropdown/picker for each runtime:
+│       │                               Node version, Python interpreter,
+│       │                               etc.; auto-detect installed runtimes)
+│       └── EnvActiveBadge.jsx        (Small badge in StatusBar showing
+│                                       active env name; click -> panel)
+│
+├── store/
+│   └── environmentStore.js           (Environments list, active env,
+│                                       CRUD ops, runtime config, persisted)
+│
+├── hooks/
+│   └── useEnvironment.js             (Wraps environmentHandler IPC calls,
+│                                       exposes active env vars to other
+│                                       hooks/stores)
+│
+└── utils/
+    ├── envParser.js                  (Parse / serialize .env file format;
+    │                                   handle comments, quoted values,
+    │                                   multiline values)
+    └── runtimeDetector.js            (Detect installed runtimes on the
+                                        host: node versions via nvm/fnm/
+                                        system, python/python3, go, java,
+                                        ruby, rust/cargo — returns list
+                                        of { runtime, version, path })
+
+electron/handlers/
+└── environmentHandler.js             (Save/load env configs encrypted in
+                                        electron-store; spawn runtime
+                                        detection; inject env vars into
+                                        child processes; .env file I/O)
+
+================================================================================
+SECTION 2: ENVIRONMENT CONFIGURATIONS
+================================================================================
+
+Goal: give each project multiple named environment configurations (like
+dev/staging/prod) that control which environment variables and which
+runtime versions are active when the agent or user runs code.
+
+2.1 Data model
+
+  Environment object (persisted per project in electron-store under
+  key `environments.<projectPath>`):
+    {
+      id: string,               // uuid
+      name: string,             // "development" | "staging" | "production"
+                                // | any user-defined name
+      type: 'development' | 'staging' | 'production' | 'custom',
+      isActive: boolean,        // exactly ONE per project is active
+      vars: EnvVar[],           // see 2.2
+      runtimeConfig: RuntimeConfig,  // see Section 3
+      createdAt: number,
+      updatedAt: number
+    }
+
+  EnvVar object:
+    {
+      id: string,
+      key: string,
+      value: string,
+      masked: boolean,          // if true, value hidden in UI (shown as ••••)
+      source: 'manual' | 'imported' | 'inherited',
+      enabled: boolean          // disabled rows are skipped during injection
+    }
+
+  Only one environment per project may have isActive === true. Switching
+  active env is atomic: deactivate current, activate new, persist, then
+  emit 'env:active-changed' IPC event so all subsystems pick up new vars.
+
+2.2 environmentStore.js
+  {
+    environments: { [projectPath]: Environment[] },
+    activeEnvId: { [projectPath]: string | null },
+
+    // selectors
+    getEnvsForProject(projectPath) -> Environment[],
+    getActiveEnv(projectPath) -> Environment | null,
+    getActiveVars(projectPath) -> Record<string, string>,  // key->value map,
+                                   // only enabled & !masked vars — this is
+                                   // what gets injected into child processes
+
+    // mutations
+    createEnv(projectPath, { name, type, copyFromId? }),
+    updateEnv(projectPath, envId, patch),
+    deleteEnv(projectPath, envId),   // cannot delete the active env;
+                                      // user must switch first
+    activateEnv(projectPath, envId),
+
+    // var-level mutations (operate on a specific env's vars array)
+    addVar(projectPath, envId, { key, value, masked }),
+    updateVar(projectPath, envId, varId, patch),
+    deleteVar(projectPath, envId, varId),
+    toggleVar(projectPath, envId, varId),    // enable/disable
+    importVars(projectPath, envId, parsed),  // EnvVar[] from envParser.js
+  }
+
+2.3 environmentHandler.js (electron/handlers/)
+  IPC-exposed functions:
+    - envList(projectPath) -> Environment[]
+    - envCreate(projectPath, { name, type, copyFromId? })
+        -> if copyFromId provided, deep-copies vars + runtimeConfig from
+           that env into the new one (useful for "create staging from dev")
+    - envUpdate(projectPath, envId, patch)
+    - envDelete(projectPath, envId)
+        -> reject with { error: 'cannot_delete_active' } if active;
+           UI must surface "Switch to another environment first."
+    - envActivate(projectPath, envId)
+        -> deactivate old, activate new, persist, emit 'env:active-changed'
+    - envReadDotFile(filePath) -> raw string content of a .env file
+    - envWriteDotFile(filePath, content) -> write serialized .env content
+        -> classify as 'file_write' (medium risk) per Phase 2A rules
+    - runtimeDetect() -> see Section 3
+    - envGetActiveVars(projectPath) -> Record<string,string>
+        (consumed by terminalHandler + agentHandler for injection)
+
+  Storage: all environment data (including var values) stored via
+  electron-store with safeStorage encryption — same mechanism as API
+  keys (Phase 1 Section 10A). Never write unencrypted secret values to
+  plain JSON on disk.
+
+================================================================================
+SECTION 3: RUNTIME / INTERPRETER SELECTOR
+================================================================================
+
+Goal: let the user specify, per environment, which version of each
+language runtime the agent and terminal should use — so "run this Python
+file" in dev uses venv/3.11 while staging uses system/3.10, without
+requiring the user to manually activate environments in the terminal.
+
+3.1 RuntimeConfig object (embedded in each Environment):
+  {
+    node: { mode: 'system' | 'nvm' | 'fnm' | 'path', version?: string,
+            resolvedPath?: string },
+    python: { mode: 'system' | 'venv' | 'conda' | 'pyenv' | 'path',
+              version?: string, resolvedPath?: string,
+              venvPath?: string },
+    go:     { mode: 'system' | 'path', resolvedPath?: string },
+    java:   { mode: 'system' | 'sdkman' | 'path', version?: string,
+              resolvedPath?: string },
+    ruby:   { mode: 'system' | 'rbenv' | 'rvm' | 'path',
+              version?: string, resolvedPath?: string },
+    rust:   { mode: 'system' | 'path', resolvedPath?: string },
+    custom: [{ label: string, envKey: string, path: string }]
+              // e.g. { label: "Bun", envKey: "BUN_BIN", path: "/home/user/.bun/bin/bun" }
+  }
+
+  'system' mode = use whatever is on PATH when the app launched.
+  'path' mode = explicit absolute path provided by user.
+  All other modes = auto-detect by interrogating the version manager.
+
+3.2 runtimeDetector.js (src/utils/)
+  detectRuntimes() -> Promise<DetectedRuntimes>
+  Where DetectedRuntimes =
+    {
+      node:   { system?: string, nvm?: string[], fnm?: string[] },
+      python: { system?: string, python3?: string,
+                conda?: string[], pyenv?: string[], venvs?: string[] },
+      go:     { system?: string },
+      java:   { system?: string, sdkman?: string[] },
+      ruby:   { system?: string, rbenv?: string[], rvm?: string[] },
+      rust:   { system?: string }
+    }
+
+  Detection strategy (run all via spawn, never exec with string concat):
+    - node system:   `node --version` -> parse "v20.11.0"
+    - nvm versions:  parse `$NVM_DIR/alias/default` and list
+                     `$NVM_DIR/versions/node/` directory
+    - fnm versions:  `fnm list` (if fnm binary found on PATH)
+    - python system: `python3 --version` -> "Python 3.11.9"
+    - conda envs:    `conda env list --json` -> parse names + paths
+    - pyenv:         `pyenv versions` -> parse version list
+    - venvs:         scan `projectPath/.venv`, `projectPath/venv`,
+                     `projectPath/env` for pyvenv.cfg
+    - go system:     `go version`
+    - java system:   `java -version` (stderr, parse first line)
+    - sdkman:        list `$SDKMAN_DIR/candidates/java/` directories
+    - ruby system:   `ruby --version`
+    - rbenv:         `rbenv versions`
+    - rvm:           `rvm list`
+
+  All detection is best-effort; if a binary is not found or the manager
+  is not installed, the corresponding entry is simply absent from the
+  result — do not throw, do not warn the user about tools they haven't
+  installed.
+
+3.3 environmentHandler.js addition
+  - runtimeDetect() -> runs runtimeDetector logic in main process
+    (where PATH is the real system PATH, not the renderer sandbox)
+    and returns DetectedRuntimes to renderer.
+
+3.4 RuntimeSelector.jsx
+  One section per runtime (Node, Python, Go, Java, Ruby, Rust, + Custom).
+  Each section:
+    - Header: runtime icon + name + current resolved version (or "Not
+      configured" if system default)
+    - Mode dropdown: system | <version manager if detected> | custom path
+    - When mode = nvm/fnm/pyenv/etc.: sub-dropdown showing detected
+      versions (populated from runtimeDetect() result). "Detect again"
+      refresh button.
+    - When mode = venv/conda: path input (or browse button) for the
+      venv/conda env directory.
+    - When mode = path: text input for absolute binary path + "Browse"
+      button (opens existing Phase 1 file picker).
+    - Below each section, resolved path shown in muted text:
+      "Resolves to: /home/user/.nvm/versions/node/v20.11.0/bin/node"
+    - If runtime detection yields nothing for a section, show a subtle
+      "Not detected — install via system package manager or the runtime's
+      version manager" info note, no error state.
+  - "Custom runtime" row at bottom: add button -> { label, envKey, path }
+    form; user can define arbitrary binaries (Bun, Deno, etc.).
+
+================================================================================
+SECTION 4: ENVIRONMENT VARIABLE MANAGER
+================================================================================
+
+4.1 EnvironmentsPanel.jsx (full panel view)
+
+  Layout:
+    Left column (240px): list of EnvironmentCards for the project.
+      - "+ New Environment" button at bottom.
+      - Each card shows name, type badge, active indicator (green dot if
+        active), count of vars ("12 variables").
+      - Clicking a card opens it in the right detail view.
+    Right column (flex-1): detail view for the selected env.
+      - Header: env name (inline edit on click), type badge, "Activate"
+        button (disabled if already active), "Duplicate" button,
+        "Delete" button (disabled if active).
+      - Two tabs: "Variables" and "Runtime".
+      - "Variables" tab: EnvVarTable.jsx + EnvImportExport.jsx.
+      - "Runtime" tab: RuntimeSelector.jsx.
+
+4.2 EnvVarTable.jsx
+
+  Displays the active env's vars as an editable table:
+  Columns: [ Enable toggle | KEY | VALUE | Masked toggle | Source | Delete ]
+
+  Rows:
+    - KEY cell: plain text input, validated as a valid env var name
+      (uppercase letters, digits, underscores, must not start with digit).
+      Show inline red border if invalid.
+    - VALUE cell: text input; if masked === true, show a password-style
+      input (text hidden, eye icon to reveal) — the actual value IS stored
+      and IS injected, it is only hidden in the UI to prevent shoulder
+      surfing. Toggling masked on a row with an existing value does NOT
+      clear the value.
+    - Source badge: 'manual' (no badge, blank), 'imported' (small grey
+      ".env" pill), 'inherited' (small purple "inherited" pill — reserved
+      for a future feature where a base env can be shared; for now, no
+      vars will have this source; implement the badge display only).
+    - Enable toggle: checkbox; unchecked vars are shown with muted text
+      and are excluded from injection.
+    - Delete: trash icon, confirms inline ("Delete KEY?  [Delete] [Cancel]"
+      replaces the row for 1 cycle) — no modal.
+
+  "+ Add variable" row at bottom of table (always visible):
+    - Blank KEY input + blank VALUE input + "Add" button.
+    - On add: validates key, creates EnvVar with source 'manual', appends
+      to table, clears inputs, focuses KEY input again for rapid entry.
+
+  "Search variables" input above table: filters rows by KEY or VALUE
+  substring, client-side only (no IPC for search).
+
+  Keyboard shortcuts within table:
+    Tab:        move to next cell (KEY -> VALUE -> masked toggle -> next row)
+    Enter:      confirm edit of current row (save value)
+    Escape:     cancel edit of current cell, revert to last saved value
+    Ctrl+D:     duplicate selected row (insert below with "_COPY" suffix on key)
+
+4.3 EnvImportExport.jsx (below EnvVarTable)
+
+  Import section:
+    - "Import from .env file" button -> opens file picker filtered to
+      *.env, .env.*, *.env.local, etc. -> reads file via
+      environmentHandler.envReadDotFile -> parses with envParser.js ->
+      opens a preview modal showing parsed vars with checkboxes:
+        "These variables will be imported. Uncheck any to skip."
+        Existing keys show a "⚠ Overwrite" warning badge.
+      Confirm -> envVars merged into current env with source 'imported'.
+    - "Paste .env text" button -> opens a small textarea for raw pasting
+      -> same preview-and-confirm flow.
+
+  Export section:
+    - "Export to .env file" button -> serializes enabled, non-masked vars
+      (masked vars are EXCLUDED from .env export — show a notice:
+      "X masked variables excluded from export") -> writes file via
+      environmentHandler.envWriteDotFile -> Phase 2A permission check
+      (file_write, medium) -> on success, show file path in a success
+      toast (reuse 'notify:show' IPC channel; Notification Center UI is
+      Part 10).
+    - "Copy as .env text" button -> copies serialized content to
+      clipboard without writing a file (no permission check needed for
+      clipboard; do NOT expose masked values in clipboard copy either).
+
+4.4 envParser.js (src/utils/)
+
+  parseDotEnv(rawString) -> EnvVar[]
+    - Handles: comments (# lines), blank lines, KEY=VALUE,
+      KEY="quoted value", KEY='single quoted', KEY=value with # inline
+      comment stripped, multiline values via backslash continuation.
+    - Returns only valid KEY=VALUE pairs; skips/ignores malformed lines
+      silently (do not throw — partial import is better than none).
+    - Sets source: 'imported' on all returned vars.
+
+  serializeDotEnv(vars: EnvVar[]) -> string
+    - Only serializes enabled && !masked vars.
+    - Quotes values that contain spaces, #, or special shell chars.
+    - Adds a generated header comment:
+      "# Generated by NexCode — [timestamp]"
+    - Groups vars with blank lines between any var whose key has a
+      different prefix (e.g. DB_ vars grouped, AWS_ vars grouped) — infer
+      grouping by splitting KEY on first underscore.
+
+================================================================================
+SECTION 5: ENV INJECTION
+================================================================================
+
+Goal: when the agent runs a terminal command or an automation step, the
+active environment's enabled vars are automatically present as environment
+variables — without the user having to manually `source .env` or export
+anything.
+
+5.1 terminalHandler.js (Phase 1) — EXTEND
+
+  When spawning a new terminal process (node-pty), merge the active env's
+  vars into the child process environment:
+    const activeVars = await environmentHandler.envGetActiveVars(projectPath);
+    const childEnv = { ...process.env, ...activeVars };
+    // pass childEnv as env option to node-pty spawn
+
+  This means vars defined in the active environment OVERRIDE process.env
+  values with the same key. Document this behavior in a code comment.
+
+  Also apply the RuntimeConfig (Section 3) to the spawn environment:
+    - For the active env's runtimeConfig.node: if mode !== 'system' and
+      resolvedPath is set, prepend the bin directory containing the binary
+      to PATH in childEnv (e.g. if node resolves to
+      /home/user/.nvm/versions/node/v20.11.0/bin/node, prepend
+      /home/user/.nvm/versions/node/v20.11.0/bin to PATH).
+    - Same logic for python, go, java, ruby, rust, and custom entries.
+    - If mode === 'system', no PATH modification needed.
+    - PATH prepend must be OS-aware: use ':' separator on macOS/Linux,
+      ';' on Windows.
+
+5.2 agentHandler.js (Phase 2A) — EXTEND
+
+  Before executing any step that spawns a terminal command, call
+  environmentHandler.envGetActiveVars(projectPath) and merge into the
+  step's execution environment exactly as terminalHandler does above.
+  Apply runtime PATH modification the same way.
+
+  Also expose the active env's vars in the AI prompt context:
+  When building the system prompt for an agent run, append a section:
+    "## Active Environment: <envName>
+    The following environment variables are set:
+    <list of enabled, non-masked vars as KEY=value pairs>
+    <masked vars listed as KEY=<masked> — value not shown>"
+  This lets the AI reference env vars by name in generated code/commands
+  without the user having to describe their env setup manually.
+
+5.3 'env:active-changed' IPC event (main -> renderer)
+
+  Emitted by environmentHandler.envActivate() after persisting the new
+  active env. Renderer-side: useEnvironment.js subscribes and:
+    - Updates environmentStore.activeEnvId for the project.
+    - Re-renders EnvActiveBadge in StatusBar.
+    - Notifies terminalHandler (via a follow-up IPC call) to re-read
+      active vars on next terminal spawn (already-running terminals are
+      NOT retroactively updated — inform user with a toast:
+      "Environment changed. Restart terminal sessions to apply.").
+
+5.4 EnvActiveBadge.jsx (StatusBar.jsx, Phase 1 — EXTEND)
+
+  Placed left of the GitStatusBadge in StatusBar (Phase 1/Part 1).
+  Shows: <Layers icon> envName  (e.g. "development" | "staging")
+  Color coding:
+    development  -> Text Secondary (neutral)
+    staging      -> Warning amber (#F59E0B)
+    production   -> Error red (#EF4444)
+    custom       -> Primary violet (#7C3AED)
+  Click -> opens EnvironmentsPanel.
+  If no environments configured for the project -> badge hidden entirely.
+
+================================================================================
+SECTION 6: NEW ENVIRONMENT CREATION FLOW
+================================================================================
+
+When the user clicks "+ New Environment" in EnvironmentsPanel:
+
+  Show an inline form at the bottom of the left column (NOT a modal):
+    - Name input (placeholder "e.g. development, staging, production")
+    - Type dropdown: Development | Staging | Production | Custom
+    - "Copy from..." optional dropdown: lists existing envs for this
+      project; if selected, the new env starts with a deep copy of that
+      env's vars and runtimeConfig.
+    - [Create] [Cancel] buttons.
+  On create:
+    - envCreate IPC call.
+    - New EnvironmentCard appears at bottom of list.
+    - Detail view switches to the new env automatically.
+    - If it is the first env for this project, auto-activate it and show
+      a subtle toast: "Created and activated 'development'."
+
+First-time / no-project-open state:
+  If no project is open (Phase 1 "no project open" empty state), show a
+  disabled EnvironmentsPanel placeholder: "Open a folder to manage
+  environments." No ability to create envs without an active project.
+
+================================================================================
+SECTION 7: DATABASE SCHEMA ADDITIONS
+================================================================================
+
+No new SQLite tables required for this part. All environment data
+(environment configs, vars, runtime configs) is stored via electron-store
+with safeStorage encryption (existing mechanism from Phase 1 ApiKeyManager).
+
+Schema key structure in electron-store:
+  'environments'         -> { [projectPath]: Environment[] }
+  'environments.active'  -> { [projectPath]: envId }
+
+Persist on every mutation (createEnv, updateEnv, deleteEnv, activateEnv,
+addVar, updateVar, deleteVar). Use a debounce of 300ms on var edits to
+avoid hammering disk on each keystroke.
+
+Add to approvals_log (Phase 2A table) — any .env file write goes through
+Phase 2A approval flow (file_write / medium) and logs to approvals_log
+with action_type: 'file_write', description: 'Export env to .env file'.
+
+================================================================================
+SECTION 8: NEW IPC CHANNELS SUMMARY (PART 3)
+================================================================================
+
+  'env:list'             renderer -> main  ({ projectPath })
+                                    -> Environment[]
+  'env:create'           renderer -> main  ({ projectPath, name, type,
+                                              copyFromId? })
+                                    -> Environment
+  'env:update'           renderer -> main  ({ projectPath, envId, patch })
+  'env:delete'           renderer -> main  ({ projectPath, envId })
+                                    -> { ok } | { error: 'cannot_delete_active' }
+  'env:activate'         renderer -> main  ({ projectPath, envId })
+  'env:get-active-vars'  renderer -> main  ({ projectPath })
+                                    -> Record<string,string>
+  'env:read-dot-file'    renderer -> main  ({ filePath })
+                                    -> string (raw .env content)
+  'env:write-dot-file'   renderer -> main  ({ filePath, content })
+                                    -> subject to Phase 2A file_write approval
+  'env:active-changed'   main -> renderer  ({ projectPath, envId, envName })
+  'runtime:detect'       renderer -> main  ()
+                                    -> DetectedRuntimes
+  'runtime:resolve'      renderer -> main  ({ runtime, config })
+                                    -> { resolvedPath: string } | { error }
+                                    (validates that a given config's resolved
+                                    path actually exists and is executable)
+
+================================================================================
+SECTION 9: CONNECTIONS HUB WIRING (PART 3)
+================================================================================
+
+  Flip the 'environments' entry in connectionRegistry.js (created in
+  Part 1) from 'coming_soon' to 'available':
+    {
+      id: 'environments',
+      name: 'Environments',
+      description: 'Manage per-project env variables, secrets, and runtimes',
+      icon: 'Layers',
+      status: 'available',
+      settingsRoute: EnvironmentsPanel   // component reference
+    }
+
+  Also update 'worktrees' if Part 2 was implemented before this part
+  (its card should already be 'available'; this is a reminder to verify
+  no regression).
+
+  ConnectionCard "Configure" button for 'environments' -> opens
+  EnvironmentsPanel as a slide-over panel OR navigates to it as a
+  sidebar tab — use whichever pattern GitPanel used in Part 1 for
+  consistency.
+
+  connectionsStore.js: no structural changes needed; existing
+  setStatus(id, status) call is sufficient.
+
+================================================================================
+SECTION 10: UI DESIGN ADDITIONS (PART 3)
+================================================================================
+
+Reuse Phase 1/2A/2B-Part1/Part2 palette.
+(Primary #7C3AED, Success #22C55E, Warning #F59E0B, Error #EF4444,
+Surface #141414, Surface2 #1C1C1C, Border #2A2A2A, Text Primary #F5F5F5,
+Text Secondary #A1A1AA, Text Muted #52525B)
+
+EnvironmentCard:
+  - Surface2 bg, Border outline, 8px radius, 12px padding
+  - Active indicator: 8px green dot (Success #22C55E) left of name
+  - Type badge pill (same sizing as Part 1 status pills):
+      development  -> Text Secondary on rgba(161,161,170,0.10) bg
+      staging      -> Warning text on rgba(245,158,11,0.12) bg
+      production   -> Error text on rgba(239,68,68,0.12) bg
+      custom       -> Primary text on rgba(124,58,237,0.12) bg
+
+EnvVarTable:
+  - Row height 36px; alternating row bg: Surface / Surface2
+  - KEY column: monospace (JetBrains Mono, 12px), Text Primary
+  - VALUE column: monospace 12px; masked rows show "••••••••" in
+    Text Muted; unmasked show Text Primary
+  - Disabled (unchecked) rows: full row opacity 0.4
+  - "+ Add variable" row: dashed Border outline on KEY input, 30px height
+  - Invalid KEY: inline Error red border, no disruptive popup
+  - Source badge 'imported': rgba(82,82,91,0.15) bg, 10px font,
+    Text Muted text
+
+EnvActiveBadge (StatusBar):
+  - Same sizing/style as GitStatusBadge (12px, icon + text)
+  - Separator dot between EnvActiveBadge and GitStatusBadge: Text Muted
+
+RuntimeSelector:
+  - Each runtime section: collapsible accordion (collapsed by default
+    if mode === 'system', expanded if customized)
+  - Resolved path line: Text Muted, 11px, JetBrains Mono
+  - "Not detected" note: Text Muted, italic, 11px — not an error color,
+    just informational
+
+Import preview modal (the only modal in this part — justified because
+import is a potentially large destructive action deserving deliberate
+confirmation):
+  - Surface bg, Border outline, 16px radius, max-width 560px, centered
+  - Max-height 60vh with scroll on var list
+  - "⚠ Overwrite" badge: Warning amber text, 10px
+
+.env export success toast: reuse 'notify:show' IPC event (Part 2 pattern)
+  — do not build Notification Center UI here (Part 10).
+
+================================================================================
+SECTION 11: IMPLEMENTATION ORDER (PART 3)
+================================================================================
+
+1.  envParser.js + runtimeDetector.js (utils) — implement and unit-test
+    with sample .env strings and a mock DetectedRuntimes; do not require
+    IPC for these unit tests.
+2.  environmentHandler.js (electron) — implement all IPC handlers,
+    electron-store read/write with safeStorage encryption, envGetActiveVars.
+3.  Register new IPC channels in electron/main.js.
+4.  Expose new channels in electron/preload.js (contextBridge additions).
+5.  environmentStore.js + useEnvironment.js.
+6.  EnvActiveBadge.jsx -> add to StatusBar.jsx (Phase 1), wire to
+    environmentStore.activeEnvId for current project.
+7.  EnvironmentCard.jsx.
+8.  EnvVarTable.jsx (read-only render first, then add edit/add/delete).
+9.  EnvImportExport.jsx (import flow first, then export).
+10. RuntimeSelector.jsx (wire to runtimeDetect IPC, build section per
+    runtime, then wiring to environmentStore runtimeConfig).
+11. EnvironmentsPanel.jsx — assemble left column (card list + new-env
+    form) + right column (detail with Variables and Runtime tabs).
+12. Extend terminalHandler.js — inject active vars + runtime PATH into
+    node-pty spawn.
+13. Extend agentHandler.js — inject active vars + runtime PATH into
+    step execution; add env context to agent system prompt.
+14. connectionRegistry.js — flip 'environments' to 'available', wire
+    settingsRoute.
+15. End-to-end test (see below).
+
+End-to-end test checklist:
+  □ Create a project with no envs -> badge hidden, panel shows empty state
+  □ Create "development" env -> auto-activated -> badge shows "development"
+    with neutral color
+  □ Add 5 vars manually: 3 plain, 1 masked, 1 disabled
+  □ Open terminal -> confirm the 3 enabled plain vars are present
+    (echo $VAR_NAME); masked var should also be present; disabled var absent
+  □ Import a .env file with 3 vars (1 overlapping with existing) -> preview
+    modal shows overlap warning -> confirm -> vars merged
+  □ Export to .env file -> verify masked var absent from exported file
+  □ Create "production" env duplicated from "development" -> verify vars
+    copied; activate -> badge turns red
+  □ Try to delete active "production" env -> error surfaced; switch to
+    "development" first -> then delete works
+  □ Configure Node version via nvm (or path mode) in RuntimeSelector ->
+    open terminal -> run `node --version` -> confirm it matches config
+  □ Connections Hub -> "Environments" card shows 'available' -> Configure
+    -> opens EnvironmentsPanel
+
+================================================================================
+SECTION 12: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of the EXISTING Phase 1 + 2A + 2B-Part1 + 2B-Part2
+   codebase — do not regenerate working files; extend terminalHandler.js,
+   agentHandler.js, StatusBar.jsx, and connectionRegistry.js in place.
+
+2. Every new button/toggle must be wired to real state and real IPC calls.
+   No placeholder onClicks, no hardcoded fake env vars.
+
+3. Secret values (masked env vars) must NEVER appear in:
+   - .env file exports
+   - "Copy as .env text" clipboard output
+   - AI prompt context injected into agent runs
+   - Log output, IPC event payloads sent to renderer beyond the
+     immediate "get active vars for injection" call
+   Treat masked vars as opaque once stored; only unmask in the UI when
+   the user explicitly clicks the eye icon on that row.
+
+4. All electron-store writes for environment data MUST use safeStorage
+   encryption (same as API keys in Phase 1) — do NOT store var values
+   in plain JSON under any code path.
+
+5. Runtime detection is best-effort and runs on-demand (triggered by
+   RuntimeSelector render or a "Detect again" button). Do NOT run it
+   at startup unconditionally — it spawns multiple child processes and
+   would slow app launch. Cache the result in a module-level variable
+   in runtimeDetector.js, valid for the session; re-run only on
+   explicit user request.
+
+6. .env file writes go through Phase 2A approval (file_write / medium)
+   exactly like any other file write. Do not bypass this.
+
+7. Do NOT implement MCP Servers, Browser integration, Computer use,
+   Hooks, Agent environment selector, terminal shell selector, popout
+   window, dictation, or notification center in this file — those are
+   Parts 4–10. Only emit 'notify:show' events for .env export success
+   or environment-change toasts; do not build the Notification Center UI.
+
+8. Follow the existing dark/light theme variables — do not hardcode new
+   colors outside the palette in Section 10.
+
+9. If the project has never had any environments created, the agent and
+   terminal should still work exactly as they did in Phase 1/2A (plain
+   process.env with no injected vars). Environments are additive and
+   opt-in — do not break existing behavior for projects that don't use
+   them.
+
+10. Keep envParser.js a pure utility (no IPC, no electron dependencies)
+    so it can eventually be tested in isolation with standard Jest/Vitest
+    without needing an Electron context.
+
+START BUILDING NOW. FOLLOW SECTION 11 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 3 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART4_BUILD_INSTRUCTIONS.txt (MCP Servers —
+registry, add/connect/configure UI)
+================================================================================

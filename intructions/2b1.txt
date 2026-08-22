@@ -1,0 +1,346 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 1 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2A_BUILD_INSTRUCTIONS.txt
+   THEME: "INTEGRATIONS HUB FOUNDATION" — Connections Panel + Git Core
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 1 built the core editor/chat/terminal shell. Phase 2A added the
+agent workflow layer (permissions, approvals, progress tracker, review,
+plugins, automations, search).
+
+Phase 2B adds the heavier "Integrations & Environment" layer shown in the
+reference screenshots:
+  - MCP Servers
+  - Browser integration
+  - Computer use
+  - Hooks
+  - Connections
+  - Git
+  - Environments
+  - Worktrees
+  - Agent environment (Windows native) + terminal shell selector
+  - Popout window + hotkey, Dictation, Notification center
+
+Because this is large, Phase 2B has been split into 10 smaller build files
+so it is easier to implement and test incrementally:
+
+  PART 1  (THIS FILE) — Roadmap + Connections Hub panel (shell/registry only)
+                         + Git Integration Core (status, branch, commit)
+  PART 2  — Git Worktrees + Branch Management UI
+  PART 3  — Environments (per-project env configs, runtime/interpreter,
+                           env var manager)
+  PART 4  — MCP Servers: registry, add/connect/configure UI
+  PART 5  — MCP Servers: tool invocation + agent/permissions integration
+  PART 6  — Browser Integration (agent web browsing capability + panel)
+  PART 7  — Computer Use (screen/mouse/keyboard control + safety UI)
+  PART 8  — Hooks System (event triggers -> scripts/automations)
+  PART 9  — Agent Environment Selector (Windows native sandbox) +
+            Terminal Shell Selector + Popout Window & Hotkey
+  PART 10 — Dictation + Notification Center + Final Integration & Testing
+
+ONLY build PART 1 from this file. Do NOT implement items belonging to
+PART 2–10 (listed above) even if referenced tangentially. Leave clean
+extension points where noted.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC — not a static label.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 1 ONLY)
+================================================================================
+
+src/
+├── components/
+│   ├── layout/
+│   │   └── ConnectionsHub.jsx        (Top-level "Connections" page/panel —
+│   │                                   registry of all integration cards)
+│   │
+│   ├── connections/
+│   │   ├── ConnectionCard.jsx        (Generic card: icon, name, status,
+│   │   │                               Connect/Configure/Disconnect button)
+│   │   └── connectionRegistry.js     (Static list of integration entries —
+│   │                                   MCP, Browser, Computer Use, Hooks,
+│   │                                   Git, Environments, Worktrees, Agent
+│   │                                   Env, Dictation, Notifications —
+│   │                                   each with status: 'available' |
+│   │                                   'coming_soon' | 'connected')
+│   │
+│   └── git/
+│       ├── GitPanel.jsx              (Sidebar tab: status, staged/unstaged,
+│       │                               branch switcher, commit box)
+│       ├── GitStatusBadge.jsx        (Small badge in StatusBar: branch name
+│       │                               + dirty/clean indicator)
+│       ├── GitCommitBox.jsx          (Commit message input + commit button)
+│       └── GitBranchSwitcher.jsx     (Dropdown: list branches, checkout,
+│                                       create new branch)
+│
+├── store/
+│   ├── connectionsStore.js           (Registry state + connected/enabled
+│   │                                   flags per integration, persisted)
+│   └── gitStore.js                   (Current branch, status, staged files,
+│                                       commit history cache)
+│
+├── hooks/
+│   └── useGit.js                     (Wraps gitHandler IPC calls)
+│
+└── utils/
+    └── gitDiffParser.js              (Parses `git diff` output for the
+                                        Diff Viewer reuse from Phase 1)
+
+electron/handlers/
+└── gitHandler.js                     (status, branch list/create/checkout,
+                                        stage/unstage, commit, log, diff —
+                                        uses simple-git or spawned git CLI)
+
+================================================================================
+SECTION 2: CONNECTIONS HUB (REGISTRY SHELL)
+================================================================================
+
+Purpose: a single page where the user can SEE every integration NexCode
+supports, its current status, and connect/configure it. Phase 2B Parts
+2–10 will plug their real settings UIs into the cards created here.
+
+Location: New sidebar icon "Connections" (use Lucide `Plug` icon), opens
+ConnectionsHub.jsx as a full-panel view (same pattern as PluginsPanel from
+Phase 2A).
+
+connectionRegistry.js — static array, one entry per integration:
+  {
+    id: 'mcp_servers',        name: 'MCP Servers',
+    description: 'Connect external tool servers via Model Context Protocol',
+    icon: 'Server',           status: 'coming_soon',  // becomes 'available'
+                                                        // in Part 4/5
+    settingsRoute: null       // Part 4/5 will set this to a component
+  }
+
+  Required entries (status = 'coming_soon' unless noted):
+    mcp_servers        — "MCP Servers"
+    browser            — "Browser Integration"
+    computer_use       — "Computer Use"
+    hooks              — "Hooks"
+    git                — "Git"              status: 'available' (THIS PART)
+    environments       — "Environments"
+    worktrees          — "Worktrees"
+    agent_environment  — "Agent Environment"
+    terminal_shell     — "Terminal Shell Selector"
+    popout_window      — "Popout Window"
+    dictation          — "Dictation"
+    notifications      — "Notification Center"
+
+ConnectionCard.jsx:
+  - Shows icon, name, description, status pill:
+      'available'  -> green "Connected" / "Configure" button (active)
+      'coming_soon' -> grey "Coming soon" pill, button disabled
+      'connected'   -> green dot + "Manage" button
+  - For 'git' (the only fully active card in Part 1), "Configure" opens
+    GitPanel.jsx in a slide-over or navigates to the Git sidebar tab.
+
+connectionsStore.js:
+  {
+    registry: ConnectionEntry[],          // from connectionRegistry.js
+    setStatus(id, status),
+    enabledIntegrations: { [id]: boolean }, // persisted to settings.json
+    toggleIntegration(id)
+  }
+
+This store is the foundation other Phase 2B parts will extend — DO NOT
+hardcode Part 2–10 logic here, only register the cards as 'coming_soon'.
+
+================================================================================
+SECTION 3: GIT INTEGRATION CORE
+================================================================================
+
+Goal: real, working git status/branch/commit support, reusing Phase 1's
+DiffViewer for showing changes. Worktree support is explicitly OUT OF
+SCOPE for Part 1 (-> Part 2).
+
+3.1 gitHandler.js (electron/handlers/)
+  Implement via spawned `git` CLI commands (no native deps) in the
+  project's working directory:
+    - gitStatus(projectPath)        -> { branch, ahead, behind, staged[],
+                                          unstaged[], untracked[] }
+    - gitListBranches(projectPath)  -> { current, local[], remote[] }
+    - gitCheckoutBranch(projectPath, branchName)
+    - gitCreateBranch(projectPath, branchName, fromRef)
+    - gitStageFile(projectPath, filePath)
+    - gitUnstageFile(projectPath, filePath)
+    - gitCommit(projectPath, message)  -> { hash, summary }
+    - gitDiff(projectPath, filePath, staged: boolean) -> raw diff string
+    - gitLog(projectPath, limit) -> commit[] { hash, message, author, date }
+
+  All commands must:
+    - Reject/handle gracefully if projectPath is not a git repo (return
+      { isRepo: false } rather than throwing).
+    - Sanitize/validate paths — never pass unsanitized user input directly
+      into shell strings; use argument arrays with spawn, not exec with
+      string concatenation.
+
+3.2 gitStore.js
+  {
+    isRepo: boolean,
+    branch: string,
+    ahead: number, behind: number,
+    staged: FileChange[], unstaged: FileChange[], untracked: string[],
+    refreshStatus(),
+    stage(filePath), unstage(filePath),
+    commit(message),
+    branches: { current, local[], remote[] },
+    refreshBranches(), checkout(branchName), createBranch(name, fromRef)
+  }
+
+3.3 useGit.js
+  Thin wrapper exposing the above via window.electronAPI (preload-exposed
+  IPC), with loading/error state per call.
+
+3.4 GitPanel.jsx (new Sidebar tab, icon = Lucide `GitBranch`)
+  Layout (reuse Phase 1 panel styling, Surface #141414):
+    - Header: current branch name (click -> GitBranchSwitcher dropdown),
+      ahead/behind counts as small arrows+numbers
+    - "Changes" section: Staged / Unstaged / Untracked file lists, each
+      row clickable -> opens DiffViewer (Phase 1) for that file
+        - Hover actions: stage (+) / unstage (-) icon buttons
+    - GitCommitBox.jsx pinned at bottom: textarea for commit message +
+      "Commit" button (disabled if no staged files or empty message)
+    - "History" collapsible section below: last N commits from gitLog,
+      each row shows short hash, message, relative time
+
+3.5 GitStatusBadge.jsx (StatusBar, Phase 1 right side)
+  - Shows: <GitBranch icon> branch-name  •  ●(dirty, amber) or ✓(clean,
+    success green)
+  - Click -> opens GitPanel.jsx
+  - If isRepo === false, badge is hidden entirely.
+
+3.6 GitBranchSwitcher.jsx
+  - Dropdown listing local branches (current highlighted) + remote
+    branches (grouped under "Remote")
+  - "+ New branch" input at top -> gitCreateBranch then checkout
+  - Selecting a branch -> gitCheckoutBranch; if uncommitted changes exist,
+    show a confirm dialog ("You have uncommitted changes. Checkout
+    anyway?") before proceeding — DO NOT silently discard changes.
+
+3.7 Permissions tie-in (reuse Phase 2A)
+  - gitCommit -> actionType 'git_commit' (medium risk, follows permission
+    mode from Phase 2A's usePermissions.js)
+  - gitCheckoutBranch with uncommitted changes, gitCreateBranch that
+    deletes/overwrites -> treat as 'git_destructive' only if it would
+    discard changes; plain checkout/create with clean tree is low risk.
+  - Actual git_push / git reset --hard / worktree operations remain OUT
+    OF SCOPE for this part (Part 2 handles worktrees; push UI can be
+    added in GitPanel in Part 2 as well, gated the same way).
+
+================================================================================
+SECTION 4: DATABASE SCHEMA ADDITIONS
+================================================================================
+
+No new tables required for Part 1. Add a settings key (existing
+settings table/JSON from Phase 1) for persisted state:
+
+  settings.connections = {
+    enabledIntegrations: { git: true, mcp_servers: false, ... }
+  }
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 1)
+================================================================================
+
+  'git:status'           renderer -> main  -> returns gitStatus result
+  'git:branches'         renderer -> main  -> returns gitListBranches result
+  'git:checkout'         renderer -> main  ({ branchName })
+  'git:create-branch'    renderer -> main  ({ branchName, fromRef })
+  'git:stage'            renderer -> main  ({ filePath })
+  'git:unstage'          renderer -> main  ({ filePath })
+  'git:commit'           renderer -> main  ({ message })
+  'git:diff'             renderer -> main  ({ filePath, staged })
+  'git:log'              renderer -> main  ({ limit })
+  'git:status-changed'   main -> renderer  (push update after any git op
+                                             or external file change)
+
+================================================================================
+SECTION 6: UI DESIGN ADDITIONS (PART 1)
+================================================================================
+
+Reuse Phase 1/2A palette (Primary #7C3AED, Success #22C55E, Warning
+#F59E0B, Error #EF4444, Surface #141414, Surface2 #1C1C1C, Border #2A2A2A).
+
+  ConnectionCard:
+    - Card background Surface2, 1px Border, 8px radius, 16px padding
+    - Status pill: 'available'/'connected' -> Success text on
+      rgba(34,197,94,0.12) bg; 'coming_soon' -> Text Muted on
+      rgba(82,82,91,0.12) bg
+
+  GitStatusBadge:
+    - Clean: Success green dot; Dirty: Warning amber dot
+    - Branch name in Text Secondary, 12px
+
+  GitPanel file rows:
+    - Added file: Success green left accent
+    - Modified file: Warning amber left accent
+    - Deleted file: Error red left accent
+    - Untracked: Text Muted left accent
+
+  GitCommitBox:
+    - Textarea Surface2 bg, Border outline, "Commit" button Primary,
+      disabled state Text Muted bg
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 1)
+================================================================================
+
+1. gitHandler.js (electron) — implement and unit-test each git command
+   against a real repo before wiring UI.
+2. gitStore.js + useGit.js
+3. GitPanel.jsx (status + changes lists, no commit yet) -> wire to
+   DiffViewer for click-to-view-diff
+4. GitCommitBox.jsx -> stage/unstage + commit, with Phase 2A permission
+   check on commit
+5. GitBranchSwitcher.jsx + GitStatusBadge.jsx
+6. connectionRegistry.js + connectionsStore.js
+7. ConnectionCard.jsx + ConnectionsHub.jsx, register sidebar "Connections"
+   icon/route
+8. Settings persistence for enabledIntegrations
+9. End-to-end test:
+     - Open a real git repo project -> GitStatusBadge shows correct
+       branch + dirty state
+     - Edit a file -> appears under Unstaged -> click opens DiffViewer
+       with correct diff
+     - Stage -> commit with message -> history updates, status returns
+       to clean
+     - Create new branch, checkout, checkout back
+     - Open Connections Hub -> all 12 cards render, only "Git" shows
+       'available' and opens GitPanel
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of the EXISTING Phase 1 + Phase 2A codebase — do not
+   regenerate working files; extend them.
+
+2. Every new button/toggle must be wired to real state and real IPC.
+   No placeholder onClicks, no mocked git data.
+
+3. Use spawned `git` CLI via argument arrays (never string-concatenated
+   shell commands) for all git operations — security requirement.
+
+4. Do NOT implement worktrees, git push/pull, MCP, Browser, Computer Use,
+   Hooks, Environments, Agent Environment selector, terminal shell
+   selector, popout window, dictation, or notification center in this
+   file — those are Parts 2–10. Only register their cards as
+   'coming_soon' in connectionRegistry.js.
+
+5. Leave connectionRegistry.js and ConnectionCard.jsx generic enough that
+   Part 4 (MCP) and later parts can flip a card's status to 'available'
+   and attach a settingsRoute without restructuring the Hub.
+
+6. Follow the existing dark/light theme variables — do not hardcode new
+   colors outside the palette in Section 6.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 1 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART2_BUILD_INSTRUCTIONS.txt (Git Worktrees +
+Branch Management UI)
+================================================================================

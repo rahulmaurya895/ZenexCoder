@@ -1,0 +1,193 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 6 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "REALTIME FULL-DUPLEX AUDIO" (The J.A.R.V.I.S Protocol)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 3 Parts 1-5 built the Swarm, Knowledge Graph, Speculative Execution, 
+Self-Healing, and Hardware Clustering.
+Phase 3 SCOPE (build now):
+  1. Full-Duplex Audio Engine — Move from standard Text-to-Speech / Dictation 
+     to a continuous WebRTC/WebSocket audio stream using the OpenAI Realtime API 
+     (or local Whisper + TTS loop).
+  2. VAD (Voice Activity Detection) — Implement VAD so the AI knows when you 
+     start speaking, stop speaking, or interrupt it mid-sentence.
+  3. Contextual Voice Streaming — The audio stream must continuously send the 
+     active Monaco Editor code state so the AI "sees" what you are typing 
+     while you are talking to it.
+  4. The "Voice Orb" UI — A floating, non-intrusive UI element (similar to 
+     ChatGPT's voice mode) that visualizes the audio frequencies and states 
+     (Listening, Thinking, Speaking).
+
+DO NOT implement anything outside this scope. This is the final piece of Phase 3.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS REALTIME FULL-DUPLEX AUDIO?
+Phase 2B Dictation was "Half-Duplex": 
+1. You click the mic. 2. You speak. 3. You stop. 4. Text is sent. 5. AI replies.
+
+"Full-Duplex" means both you and the AI can speak and listen at the EXACT SAME TIME.
+Imagine you are typing code and you say out loud: "Jarvis, change the loop to a map."
+The AI instantly says: "Sure, updating the map function, but wait, the array 
+might be null." 
+You interrupt the AI mid-sentence: "Ah right, add a null check first."
+The AI stops talking instantly, registers the interruption, and says: "Added."
+
+To do this, we don't send text. We stream raw PCM audio bytes continuously 
+over a WebSocket. We use Voice Activity Detection (VAD) to mute the AI the 
+millisecond you start speaking.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 6)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   └── voice/
+│       ├── VoiceOrbOverlay.jsx       (Floating global UI showing the AI's state)
+│       ├── AudioVisualizer.jsx       (Canvas element drawing sine waves for audio)
+│       └── VoiceSettings.jsx         (Select microphone, output speaker, API keys)
+│
+├── store/
+│   └── voiceStore.js                 (Connection state, isMuted, isAI_Speaking)
+│
+└── hooks/
+    └── useRealtimeAudio.js           (Manages `navigator.mediaDevices` and 
+                                        Web Audio API contexts)
+
+electron/handlers/
+├── audioStreamHandler.js             (Receives raw PCM audio from renderer, 
+                                        buffers it, and manages the WebSocket)
+└── realtimeClient.js                 (The actual WebSocket client connecting to 
+                                        wss://api.openai.com/v1/realtime)
+
+================================================================================
+SECTION 2: AUDIO PIPELINE & VOICE ACTIVITY DETECTION
+================================================================================
+
+Goal: Capture mic audio, detect speech, and play AI audio with zero latency.
+
+2.1 useRealtimeAudio.js (src/hooks/)
+  - Request mic permissions using `navigator.mediaDevices.getUserMedia({ audio: true })`.
+  - Use `AudioContext` and a `ScriptProcessorNode` (or `AudioWorklet`) to capture 
+    raw PCM audio at 24kHz.
+  - Send this audio in chunks (e.g., every 100ms) to the main process via a 
+    high-frequency IPC channel: `voice:pcm-chunk-out`.
+  - Listen for `voice:pcm-chunk-in` from the AI, decode it, and play it through 
+    a destination node.
+
+2.2 realtimeClient.js (electron/handlers/)
+  - Maintain a persistent WebSocket connection to the AI provider.
+  - When the AI generates audio, stream it down to the renderer.
+  - VAD (Interruption): If the WebSocket sends an `input_audio_buffer.speech_started` 
+    event, it means the AI heard YOU speak. Immediately flush the AI's playback 
+    buffer so the AI "shuts up" instantly.
+
+================================================================================
+SECTION 3: CONTEXTUAL VOICE STREAMING (EDITOR SYNC)
+================================================================================
+
+Goal: The AI must know what you are looking at while you talk.
+
+3.1 Context Updates
+  - In a standard chat, you send code when you hit "Enter". In voice mode, 
+    there is no "Enter" button.
+  - Use a debouncer on the Monaco Editor `onChange` event (from Phase 1).
+  - Every time the user stops typing for 1 second, silently send a JSON event 
+    over the Realtime WebSocket:
+    ```json
+    {
+      "type": "conversation.item.create",
+      "item": {
+        "type": "message",
+        "role": "system",
+        "content": [{ "type": "text", "text": "User is currently looking at file src/auth.js: \n\n <code_state>" }]
+      }
+    }
+    ```
+  - Now, if the user says "What does this line do?", the AI already has the code 
+    in its real-time context buffer.
+
+3.2 Tool Calling (Swarm Integration)
+  - The Realtime API supports function calling. Pass the Phase 3 Part 1 `PERSONAS` 
+    as tools.
+  - If the user says "Jarvis, write a test for this", the Realtime API will trigger 
+    a `tool_call` to the `SecOps` Swarm Agent.
+  - The AI will literally say: "Passing this to the QA agent now," while the 
+    background Swarm does the heavy lifting.
+
+================================================================================
+SECTION 4: THE "VOICE ORB" UI
+================================================================================
+
+Goal: A beautiful, non-intrusive global indicator.
+
+4.1 VoiceOrbOverlay.jsx
+  - A frameless React Portal rendered in the bottom-right corner of the app.
+  - Default State (Disconnected): Hidden or a tiny gray microphone icon.
+  - Active State (Connected): A glowing, CSS-animated sphere.
+    - Listening: Soft pulse (Blue).
+    - User Speaking: Expanding/contracting based on mic volume (Green).
+    - AI Thinking: Fast rotation or shimmering effect (Purple).
+    - AI Speaking: AudioVisualizer.jsx kicks in, showing Siri-like waveforms 
+      mapped to the incoming PCM audio frequencies.
+  - Includes a quick "Mute Mic" and "Disconnect" button on hover.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 6)
+================================================================================
+
+  'voice:connect'            renderer -> main  ({ provider, apiKey })
+  'voice:disconnect'         renderer -> main  
+  'voice:pcm-chunk-out'      renderer -> main  ({ pcmData }) // High frequency
+  'voice:pcm-chunk-in'       main -> renderer  ({ pcmData }) // High frequency
+  'voice:state-change'       main -> renderer  ({ state: 'listening'|'speaking'|'idle' })
+  'voice:context-update'     renderer -> main  ({ filePath, content })
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER
+================================================================================
+
+1. realtimeClient.js (electron) — Set up the WebSocket infrastructure for the 
+   OpenAI Realtime API (or compatible local WS endpoint).
+2. audioStreamHandler.js — Implement the PCM byte buffering and base64 conversion 
+   required by the WebSocket.
+3. Register new high-frequency IPC channels in main.js and preload.js.
+4. useRealtimeAudio.js (React) — Handle the browser `AudioContext`, mic permissions, 
+   and playback nodes.
+5. voiceStore.js — Create the Zustand store to track the realtime connection state.
+6. AudioVisualizer.jsx and VoiceOrbOverlay.jsx (UI construction).
+7. Editor Sync — Hook up the silent context updates from the Monaco Editor to 
+   the WebSocket.
+8. End-to-end test:
+   - Click "Start Voice Session". Verify the Orb turns Blue.
+   - Say "Hello, what file am I looking at?".
+   - Verify the AI instantly replies with the correct file name in a natural voice.
+   - Interrupt the AI mid-sentence by saying "Wait, change it to index.js".
+   - Verify the AI stops speaking instantly and acknowledges the correction.
+
+================================================================================
+SECTION 7: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1, 2, and 3 (Parts 1-5) codebase.
+2. AUDIO PERFORMANCE: IPC can bottleneck if you send thousands of tiny messages 
+   a second. Buffer the PCM data into reasonable chunks (e.g., 50ms-100ms) 
+   before crossing the IPC bridge from renderer to main.
+3. MEMORY LEAKS: AudioContext and WebSocket listeners are notorious for memory 
+   leaks. Ensure `voice:disconnect` forcefully closes the WS, stops all media 
+   tracks (`track.stop()`), and suspends the AudioContext.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+CONGRATULATIONS ON COMPLETING THE GOD-LEVEL ARCHITECTURE!
+================================================================================
+END OF PHASE 3 — PART 6 OF 6
+================================================================================

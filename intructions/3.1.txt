@@ -1,0 +1,235 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 1 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "MULTI-AGENT SWARM INTELLIGENCE" (The Virtual Startup)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phases 1 and 2 built a robust, secure, local-first single-agent system with 
+deep OS and Git integrations. 
+Phase 3 SCOPE (build now):
+  1. The Swarm Engine — Upgrade from a single linear AI loop to a State Machine 
+     where multiple AI "Personas" talk to each other.
+  2. Role Definitions — Create strict System Prompts and capability scopes for:
+     Architect (Plans), Coder (Writes), SecOps (Reviews), QA (Tests).
+  3. Inter-Agent Routing — How the Architect delegates tasks to the Coder, 
+     and how SecOps rejects bad code back to the Coder.
+  4. Swarm UI Panel — A group-chat interface where the user watches the AI 
+     team debate and collaborate before asking the user for final Phase 2A approval.
+
+DO NOT implement: Knowledge Graph, Speculative Execution, Self-Healing, 
+Hardware Clustering, or Realtime Audio. Those are Parts 2-6.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS A SWARM ENGINE?
+Think of Phase 2A like hiring one really smart but overworked Full-Stack Developer. 
+If you ask them to build an app, they try to plan, code, and test all at once in 
+a single straight line. Sometimes they make mistakes because they can't review 
+their own work objectively.
+
+Phase 3 introduces a "Swarm". Instead of one developer, you just hired a Startup:
+1. You (The CEO) type: "Build a login system."
+2. The AI Architect takes the prompt, looks at your Phase 1 File Tree, and 
+   writes a blueprint.
+3. The Architect passes the blueprint to the AI Coder.
+4. The Coder writes the actual code.
+5. Before showing it to you, the AI SecOps (Security Agent) checks the code. 
+   SecOps finds a missing password hash and says "REJECTED: Add bcrypt."
+6. The Coder fixes it.
+7. Finally, they present the finished, secure code to you for Approval.
+
+HARDWARE CONSTRAINT (8GB RAM TRICK):
+We cannot run 4 different Local LLMs at the same time on an i3 processor. 
+Therefore, the Core Engine will use "Persona Swapping". It uses the EXACT 
+SAME loaded model (e.g., Qwen 2.5 7B from Phase 1), but clears the context 
+and aggressively swaps the `System Prompt` depending on whose "turn" it is 
+to speak. One brain, wearing four different hats sequentially.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 1)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   └── swarm/
+│       ├── SwarmChatPanel.jsx        (Replaces/Extends ChatPanel: Shows group chat)
+│       ├── SwarmMessageBubble.jsx    (Shows Avatar of which Agent is speaking)
+│       └── SwarmOrchestratorUI.jsx   (Visual graph of who is talking to whom)
+│
+├── store/
+│   └── swarmStore.js                 (Tracks Swarm state, active speaker, 
+│                                       internal conversation history)
+│
+└── utils/
+    └── swarmPersonas.js              (Defines the strict System Prompts & 
+                                        allowed MCP/Terminal tools for each role)
+
+electron/handlers/
+└── swarmHandler.js                   (The Core Engine: State machine that 
+                                        routes messages between AI personas)
+
+================================================================================
+SECTION 2: THE CORE ENGINE (SWARM STATE MACHINE)
+================================================================================
+
+Goal: A background loop that decides WHICH agent speaks next.
+
+2.1 swarmHandler.js (electron/handlers/)
+  - The State Machine uses a concept called "Handoffs". 
+  - When an AI finishes its thought, it must output a specific JSON command 
+    indicating who should speak next.
+  
+  Example LLM Output from Architect:
+  {
+    "analysis": "The user wants a login system. I have planned the DB schema.",
+    "handoff_to": "coder",
+    "instructions": "Implement auth.js using the plan above."
+  }
+
+  - `swarmHandler.js` intercepts this JSON, hides it from the user's main 
+    chat view, and immediately sends "instructions" to the Coder's context window.
+
+2.2 Internal Workflow Loop:
+  1. `USER` sends prompt -> `ARCHITECT`
+  2. `ARCHITECT` plans -> handoff -> `CODER`
+  3. `CODER` writes code -> handoff -> `SECOPS`
+  4. `SECOPS` analyzes.
+     - If FAIL -> handoff -> `CODER` (with error details).
+     - If PASS -> handoff -> `USER_APPROVAL`
+  5. `USER_APPROVAL` triggers Phase 2A's Progress Tracker & Review Panel.
+
+================================================================================
+SECTION 3: AGENT PERSONAS & ROLES
+================================================================================
+
+Goal: Define strict boundaries. The Coder shouldn't plan; the Architect shouldn't code.
+
+3.1 swarmPersonas.js (src/utils/)
+  Export a configuration object for the Swarm:
+
+  const PERSONAS = {
+    architect: {
+      id: "architect",
+      name: "Architect",
+      avatarColor: "#F59E0B", // Warning Amber
+      systemPrompt: "You are the Lead Architect. Break the user request down into logical steps. DO NOT write code. Output a JSON plan and handoff to the 'coder'.",
+      allowedTools: ["file_read", "browser_read_page"] // Read only
+    },
+    coder: {
+      id: "coder",
+      name: "Senior Dev",
+      avatarColor: "#7C3AED", // Primary Violet
+      systemPrompt: "You are the Senior Developer. Receive instructions from the architect. Write production-ready code. Output the code and handoff to 'secops'.",
+      allowedTools: ["file_write", "terminal_run"] // Write access
+    },
+    secops: {
+      id: "secops",
+      name: "Security QA",
+      avatarColor: "#EF4444", // Error Red
+      systemPrompt: "You are the Security Lead. Review the coder's code. Look for injection flaws, unhandled exceptions. If bad, handoff to 'coder' with fixes. If good, handoff to 'user_approval'.",
+      allowedTools: ["file_read", "terminal_run"] // Can run tests
+    }
+  }
+
+================================================================================
+SECTION 4: INTER-AGENT COMMUNICATION (THE DEBATE ROOM)
+================================================================================
+
+4.1 The "Scratchpad" Memory
+  When agents talk to each other, they don't need to pollute the user's main 
+  chat history. 
+  - `swarmStore.js` will maintain a `swarmInternalHistory` array.
+  - This array is passed as context to the local LLM/Cloud API during the loop.
+  - Only the *final* consensus or major milestones are written to the SQLite 
+    `messages` table (Phase 1).
+
+4.2 Preventing Infinite Loops
+  - `swarmHandler.js` must implement a `max_iterations` counter (default: 5).
+  - If Coder and SecOps bounce back and forth 5 times without passing, the 
+    Orchestrator forcefully halts the loop and hands off to the User: 
+    "SecOps and Coder cannot agree. Please intervene."
+
+================================================================================
+SECTION 5: SWARM UI PANEL
+================================================================================
+
+Goal: Make the internal AI "thoughts" visible so the user doesn't think the 
+app is frozen during a multi-agent debate.
+
+5.1 SwarmChatPanel.jsx (Extends Phase 1 ChatPanel)
+  - When a Swarm Task is active, the Chat Panel splits.
+  - Top half: Standard User <-> AI chat.
+  - Bottom half (Collapsible): "Internal Agent Discussion".
+
+5.2 SwarmMessageBubble.jsx
+  - Looks like a group chat. 
+  - Architect: "[Amber Avatar] Planning folder structure..."
+  - Coder: "[Violet Avatar] Generating auth.js..."
+  - SecOps: "[Red Avatar] Wait, auth.js has plain text passwords. Fix it."
+  - Text is slightly muted/smaller to indicate it's internal monologue.
+
+5.3 SwarmOrchestratorUI.jsx (Header widget)
+  - A visual flowchart at the top of the chat:
+    [User] -> [Architect] -> [Coder] -> [SecOps]
+  - Highlight the currently active node with a glowing CSS pulse animation so 
+    the user knows exactly whose "turn" it is.
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 1)
+================================================================================
+
+  'swarm:start-task'        renderer -> main  ({ prompt })
+  'swarm:agent-turn'        main -> renderer  ({ activePersonaId })
+  'swarm:internal-msg'      main -> renderer  ({ personaId, content })
+  'swarm:consensus'         main -> renderer  ({ finalCode, executionPlan })
+  'swarm:halt'              renderer -> main  // User interrupts the swarm
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. swarmPersonas.js — Define the system prompts and roles.
+2. swarmHandler.js (electron) — Build the State Machine logic. Implement the 
+   JSON parsing for "handoff_to" and the iteration limit.
+3. Modify openaiService.js / ollamaService.js to support swapping the System 
+   Prompt dynamically per request without losing chat history.
+4. Register new IPC channels in main.js and preload.js.
+5. swarmStore.js — Create the Zustand store for tracking internal chat history 
+   and the active speaking persona.
+6. SwarmMessageBubble.jsx and SwarmOrchestratorUI.jsx — Build the group-chat UI.
+7. SwarmChatPanel.jsx — Assemble the layout.
+8. End-to-end test:
+   - Ask: "Write a quick math function."
+   - Verify Architect plans it.
+   - Verify Coder writes it.
+   - Verify SecOps checks it.
+   - Verify the final Phase 2A Approval Request pops up for the user to apply 
+     the changes to the Monaco Editor.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 and 2 codebase. Do not break the Phase 2A 
+   Approval flow. The Swarm acts as the *brain* before the action; the Phase 2A 
+   Progress Tracker is the *hands* executing the action.
+2. Crucial for Local LLMs (Ollama): If the user is on 8GB RAM, loading multiple 
+   models will crash the OS. You MUST reuse the exact same loaded model ID. 
+   Do not spawn a new Ollama process per agent; just send a new API request 
+   to the running instance with the updated `systemPrompt`.
+3. Handle JSON parse errors gracefully. If the LLM fails to output the 
+   `{"handoff_to": "..."}` JSON correctly, the Orchestrator should inject a 
+   system message: "Invalid format. You must output JSON with 'handoff_to'." 
+   and retry once before failing back to the user.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+================================================================================
+END OF PHASE 3 — PART 1 OF 6
+================================================================================

@@ -1,0 +1,214 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 5 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART4_BUILD_INSTRUCTIONS.txt
+   THEME: "MCP SERVERS" — Tool Invocation + Agent/Permissions Integration
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Part 4 built: The MCP Server registry, connection lifecycle (stdio transport), 
+and the UI to list available tools from connected servers.
+Part 5 SCOPE (build now):
+  1. Tool Schema Mapping — Convert the MCP tool schemas into formats accepted 
+     by OpenAI, Anthropic, and Gemini (function calling / tool use).
+  2. Agent Execution Loop Upgrade — Inject active MCP tools into the AI's 
+     system context and API payload.
+  3. Permission Gating (Phase 2A Integration) — Route every AI-initiated MCP 
+     tool call through the ApprovalRequest flow BEFORE execution.
+  4. Tool Invocation — Call `client.callTool()` on the correct MCP server 
+     and pass the result back to the LLM to continue the agent loop.
+  5. UI Updates — Show MCP tool execution live in the ProgressTracker and 
+     MessageBubbles.
+
+DO NOT implement: Browser integration, Computer use, Hooks, Agent env, 
+terminal shell selector, popout window, dictation, or notifications. 
+Those are Parts 6-10.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 5 ONLY)
+================================================================================
+
+Modify existing files in the nexcode/ structure:
+
+src/
+├── services/
+│   ├── openaiService.js              (EXTEND: Map MCP tools to functions)
+│   ├── anthropicService.js           (EXTEND: Map MCP tools to Claude tools)
+│   └── geminiService.js              (EXTEND: Map MCP tools to Gemini tools)
+│
+├── utils/
+│   └── mcpToolMapper.js              (NEW: Utility to convert MCP inputSchema 
+│                                       to vendor-specific JSON schemas)
+│
+├── hooks/
+│   └── useAgentRun.js                (EXTEND: Handle `tool_calls` yielding 
+│                                       MCP actions)
+
+electron/handlers/
+├── mcpHandler.js                     (EXTEND: Add mcpCallTool execution)
+└── agentHandler.js                   (EXTEND: Route MCP tool calls through 
+                                        the approval queue)
+
+================================================================================
+SECTION 2: TOOL SCHEMA MAPPING
+================================================================================
+
+Goal: The LLM needs to know what tools are available. MCP provides tools in 
+JSON Schema format, but each LLM provider expects a slightly different wrapper.
+
+2.1 mcpToolMapper.js (src/utils/)
+  Export functions to transform an array of MCP tools (from Part 4):
+  
+  formatForOpenAI(mcpTools, serverId) ->
+    Returns array of:
+    {
+      type: "function",
+      function: {
+        name: `${serverId}__${tool.name}`, // Namespaced to avoid collisions
+        description: tool.description,
+        parameters: tool.inputSchema       // MCP inputSchema is standard JSON Schema
+      }
+    }
+
+  formatForAnthropic(mcpTools, serverId) ->
+    Returns array of:
+    {
+      name: `${serverId}__${tool.name}`,
+      description: tool.description,
+      input_schema: tool.inputSchema
+    }
+
+  Namespacing is CRITICAL. If two MCP servers both expose a `query_db` tool, 
+  the LLM must be able to specify WHICH server to use via the prefix.
+
+================================================================================
+SECTION 3: THE AGENT EXECUTION LOOP UPGRADE
+================================================================================
+
+Goal: When the user submits a prompt, gather all tools from all 'connected' 
+MCP servers and pass them to the LLM.
+
+3.1 AI Service Injection (openaiService.js / anthropicService.js)
+  Modify the `runChat` and `runPrompt` methods:
+  - Read `mcpStore.serverTools` for all currently connected servers.
+  - Map them using `mcpToolMapper.js`.
+  - Attach them to the API request payload under `tools`.
+  - Update the System Prompt dynamically:
+    "You have access to external tools via the Model Context Protocol (MCP). 
+     Tool names are prefixed with their server ID. Use them when necessary."
+
+3.2 LLM Response Handling
+  When the LLM streams back a `tool_call` (OpenAI) or `tool_use` (Anthropic):
+  1. Pause the text stream.
+  2. Parse the tool name and arguments.
+  3. If the tool name matches the `${serverId}__${toolName}` pattern, it is 
+     an MCP tool.
+  4. Dispatch this to `agentStore` to create a pending step in the ProgressTracker.
+
+================================================================================
+SECTION 4: PERMISSIONS GATING & TOOL EXECUTION (PHASE 2A TIE-IN)
+================================================================================
+
+Goal: MCP tools can be highly destructive (e.g., dropping a database). 
+EVERY MCP tool call must pass through Phase 2A's permission system.
+
+4.1 approvalRules.js (Phase 2A) — EXTEND
+  Add a new rule:
+  actionType: 'mcp_tool_call'
+  riskLevel: 'medium' (Follows permission mode. If mode is "Default", asks 
+             for approval. If "Auto-review" or "Full access", runs automatically 
+             but logs to Review panel).
+
+4.2 agentHandler.js & mcpHandler.js — EXECUTION
+  When the agent loop intercepts an MCP tool call:
+  1. Emit 'agent:approval-pending' with actionType 'mcp_tool_call'.
+     Payload should include: Server Name, Tool Name, and the JSON arguments.
+  2. The UI shows the ApprovalRequest card (from Phase 2A).
+  3. If User Denies -> Return a tool_result to the LLM saying "User denied execution."
+  4. If User Approves -> Call `mcpHandler.mcpCallTool(serverId, toolName, args)`.
+  
+  `mcpCallTool` implementation:
+    - Look up the active MCP Client instance by `serverId`.
+    - Await `client.callTool({ name: toolName, arguments: args })`.
+    - Return the result (usually an array of text/image content objects) back 
+      to the renderer.
+  
+  5. The renderer wraps the result in a `tool_result` message and sends it 
+     back to the LLM. The LLM then resumes its analysis/generation.
+
+================================================================================
+SECTION 5: UI ADDITIONS (PART 5)
+================================================================================
+
+Reuse Phase 1/2A UI components.
+
+5.1 ProgressTracker.jsx (Phase 2A) — EXTEND
+  When an MCP tool is executing, it should appear as a step:
+  - Icon: Use the 'Server' icon (Lucide).
+  - Title: "Calling tool: [Tool Name] on [Server Name]"
+  - Expandable details: Show a nicely formatted, read-only JSON block of the 
+    arguments the AI decided to pass.
+  - When finished, show the JSON response snippet returned by the MCP server.
+
+5.2 ApprovalRequest.jsx (Phase 2A) — EXTEND
+  Add specific rendering for 'mcp_tool_call':
+  - Border-left: 3px solid Warning (#F59E0B).
+  - Text: "AI wants to execute [Tool Name] via [Server Name]".
+  - Body: Display the arguments in a code block.
+  - Ensure the user can Edit the arguments before approving (the existing 
+    "Edit First" button logic from Phase 2A).
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PART 5)
+================================================================================
+
+  'mcp:call-tool'        renderer -> main  ({ serverId, toolName, args })
+                                    -> returns MCP Tool Result Object
+  
+  (No other new channels required; relies heavily on existing Phase 2A 
+  'agent:approval-pending' and 'agent:approval-response' channels).
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 5)
+================================================================================
+
+1. mcpToolMapper.js — Implement logic to convert MCP JSON schemas into 
+   OpenAI and Anthropic format with `${serverId}__` namespacing.
+2. mcpHandler.js — Add `mcpCallTool` to execute the tool via the MCP SDK.
+3. approvalRules.js — Add 'mcp_tool_call' as a medium-risk action.
+4. openaiService.js / anthropicService.js — Inject `tools` array into the 
+   API payloads and handle `tool_calls` in the stream response.
+5. useAgentRun.js & agentHandler.js — Wire the intercepted tool call to the 
+   Phase 2A approval queue.
+6. ProgressTracker.jsx & ApprovalRequest.jsx — Update UI to render the MCP 
+   tool steps clearly.
+7. End-to-end test:
+   - Ensure an MCP server is connected (from Part 4).
+   - Switch Permission Mode to "Default".
+   - Ask the AI a question that requires the tool (e.g., "Check the local DB").
+   - Verify the AI halts, the Approval Request UI pops up showing the tool and args.
+   - Click "Approve".
+   - Verify `mcpCallTool` runs, fetches data, and returns it to the AI.
+   - Verify the AI generates a final response based on the MCP data.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-4) codebase.
+2. Handling tool errors is crucial. If `mcpCallTool` throws an error (e.g., 
+   timeout, or server disconnected), catch it and pass the error string 
+   BACK TO THE LLM as the tool result. DO NOT crash the app. The AI needs to 
+   know the tool failed so it can apologize or try another method.
+3. Keep the namespacing strict. The LLM must not get confused if two servers 
+   have a tool named "read_file".
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 5 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt (Browser Integration)
+================================================================================

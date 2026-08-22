@@ -1,0 +1,600 @@
+================================================================================
+   NEXCODE — PHASE 2A BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_BUILD_INSTRUCTIONS.txt (Phase 1)
+   THEME: "AGENT WORKFLOW CORE" — Make NexCode behave like a real agentic
+   coding assistant (Claude Code / Cursor Agent style), not just a chatbot.
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 1 already built: chat panel, streaming, sidebar (projects + history),
+file tree, Monaco editor, diff viewer, terminal (xterm + node-pty), Ollama
+manager, settings panel, multi-step task executor (basic).
+
+Phase 2 adds the features visible in the reference screenshots that were
+MISSING from Phase 1. Phase 2 is split into 2A and 2B. THIS FILE = 2A ONLY.
+
+PHASE 2A SCOPE (build now):
+  1. Work Mode Toggle ("For coding" / "For everyday work")
+  2. Permissions System (Default / Auto-review / Full access)
+  3. Permission Notifications (inline + system toast)
+  4. Progress Tracker — right-side panel for agent task execution
+  5. "Ask for Approval" system (AI proposes action -> user approves/denies)
+  6. Review Button on Changes + Code Review Mode (Inline / Detached)
+  7. Follow-up Behavior (Queue vs Steer) while agent is running
+  8. Context Window Usage Display (token meter)
+  9. Sidebar completion: New Chat, Search, Plugins, Automations (full, real)
+
+DO NOT touch Phase 2B items in this file (MCP servers, Browser integration,
+Computer use, Hooks/Connections/Git/Environments/Worktrees, Agent environment
+selector, terminal shell selector, popout window, dictation, notification
+center). Those come in NEXCODE_PHASE2B_BUILD_INSTRUCTIONS.txt.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC — not a static label.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   ├── layout/
+│   │   ├── WorkModeToggle.jsx       (Coding mode vs Everyday mode switch)
+│   │   ├── RightPanel.jsx           (Container for Progress Tracker)
+│   │   └── TokenMeter.jsx           (Context window usage bar, in TopBar)
+│   │
+│   ├── agent/
+│   │   ├── ProgressTracker.jsx      (Step list with live status icons)
+│   │   ├── PlanCard.jsx             (Shows AI's generated plan, editable)
+│   │   ├── ApprovalRequest.jsx      (Inline "AI wants to..." approval card)
+│   │   ├── ApprovalQueue.jsx        (Stack of pending approvals)
+│   │   └── FollowUpBar.jsx          (Queue / Steer input while running)
+│   │
+│   ├── review/
+│   │   ├── ReviewButton.jsx         (Appears on any AI file change)
+│   │   ├── ReviewPanel.jsx          (Inline review mode — under message)
+│   │   └── ReviewDetached.jsx       (Detached/floating review window view)
+│   │
+│   ├── chat/
+│   │   ├── ChatSearch.jsx           (Full-text search across all sessions)
+│   │   └── NewChatButton.jsx        (Already partial — complete it)
+│   │
+│   ├── plugins/
+│   │   ├── PluginsPanel.jsx         (List/install/enable plugins)
+│   │   ├── PluginCard.jsx           (Individual plugin: name, desc, toggle)
+│   │   └── pluginRegistry.js        (Static + user-added plugin manifest)
+│   │
+│   ├── automations/
+│   │   ├── AutomationsPanel.jsx     (List of saved automations)
+│   │   ├── AutomationEditor.jsx     (Create/edit trigger + prompt + actions)
+│   │   └── AutomationCard.jsx       (Single automation: name, trigger, run)
+│   │
+│   └── settings/
+│       ├── PermissionsSettings.jsx  (Default/Auto-review/Full access UI)
+│       └── WorkModeSettings.jsx     (Per-mode default behavior config)
+│
+├── store/
+│   ├── agentStore.js                (Plan, steps, approvals, run state)
+│   ├── permissionsStore.js          (Permission mode + per-action rules)
+│   └── automationStore.js           (Saved automations + schedules)
+│
+├── hooks/
+│   ├── useAgentRun.js                (Drives plan execution + approvals)
+│   ├── usePermissions.js             (Checks if action needs approval)
+│   └── useTokenUsage.js              (Computes context window usage)
+│
+└── utils/
+    ├── approvalRules.js              (Maps action types -> risk level)
+    └── tokenCounter.js                (EXISTS in phase 1 — extend it)
+
+electron/handlers/
+└── agentHandler.js                   (Orchestrates plan execution, IPC
+                                        events for step start/done/error,
+                                        approval request/response channel)
+
+================================================================================
+SECTION 2: WORK MODE TOGGLE ("For coding" / "For everyday work")
+================================================================================
+
+Location: TopBar.jsx, left of model selector. Two-segment pill switch.
+
+States:
+  "coding"   -> default. Shows: File Tree, Editor, Terminal, Diff Viewer,
+                Progress Tracker, full agent tool access (file write,
+                terminal run, git).
+  "everyday" -> Hides File Tree + Editor + Terminal by default (still
+                reachable via a "Show Dev Tools" toggle). Chat becomes
+                full-width. System prompt switches to a general-assistant
+                persona. Agent tools restricted to: web research summary,
+                document drafting, file read (no write/terminal) unless
+                user explicitly enables dev tools for the session.
+
+Implementation:
+  - appStore.js: add `workMode: 'coding' | 'everyday'` (default 'coding')
+  - Switching mode re-applies layout via RightPanel / FileTree / Terminal
+    visibility flags, animated 200ms (per existing animation spec).
+  - Switching mode also swaps SYSTEM_PROMPTS key used (coding vs general,
+    both already defined in promptTemplates.js from Phase 1).
+  - Persist last-used mode per project in projectStore.
+
+================================================================================
+SECTION 3: PERMISSIONS SYSTEM
+================================================================================
+
+Three global modes, selectable in Settings > Permissions, and quick-switch
+via a shield icon in TopBar (shows current mode + dropdown):
+
+  1. "Default"
+     - Every file write, file delete, terminal command, and git operation
+       requires explicit user approval via ApprovalRequest card.
+     - Read-only actions (read file, list directory, read git status) run
+       automatically, no approval needed.
+
+  2. "Auto-review"
+     - AI may perform file writes and terminal commands automatically,
+       BUT every change is logged into the Review Panel (Section 6) for
+       the user to review/revert afterward. A toast notification appears
+       for each batch: "AI made 3 changes — Review".
+     - Destructive actions (delete file/folder, git push, git reset --hard,
+       rm -rf, drop database, format) ALWAYS require approval regardless
+       of mode.
+
+  3. "Full access"
+     - AI executes file writes, terminal commands, and git operations
+       without per-action approval. Still logs everything to Review Panel.
+       Destructive actions still require approval (same as Auto-review) —
+       this floor cannot be disabled from the UI.
+     - Show a persistent amber banner in TopBar while Full access is
+       active: "Full access enabled — NexCode can modify files and run
+       commands without asking."
+
+Per-action override:
+  - User can right-click any pending approval and choose "Always allow
+    this action type for this project" -> stored in
+    permissionsStore.projectRules[projectPath][actionType] = 'allow'.
+
+approvalRules.js — classify every agent action into:
+  actionType: 'file_read' | 'file_write' | 'file_create' | 'file_delete'
+            | 'terminal_run' | 'git_commit' | 'git_push' | 'git_destructive'
+            | 'package_install' | 'network_request'
+  riskLevel: 'low' | 'medium' | 'high'
+
+  Rule table (used by usePermissions.js):
+    file_read, network_request (read-only)        -> low, never blocks
+    file_write, file_create, terminal_run,
+    package_install, git_commit                    -> medium, follows mode
+    file_delete, git_push, git_destructive          -> high, ALWAYS approval
+
+================================================================================
+SECTION 4: PERMISSION NOTIFICATIONS
+================================================================================
+
+Two layers:
+
+  A. Inline (in chat / Progress Tracker):
+     - ApprovalRequest.jsx card appears exactly where the action would
+       happen, e.g. above the diff: "AI wants to write to src/auth.js"
+       with buttons: [Approve] [Approve All] [Deny] [Edit First].
+     - "Approve All" approves this action type for the rest of the run
+       (not persisted beyond the session unless user also checks
+       "Remember for this project").
+
+  B. System-level toast (Electron Notification API):
+     - Fired when: (a) an approval is requested while the app/window is
+       not focused, (b) Auto-review batch completes, (c) Full access
+       performs a high-risk-adjacent action.
+     - Toast click -> focuses NexCode window and scrolls to the relevant
+       ApprovalRequest or Review entry.
+     - Settings toggle: "Show system notifications for approvals"
+       (default ON). Respect OS-level Do Not Disturb if Electron reports it.
+
+IPC additions (electron/main.js):
+  'agent:approval-request'  -> renderer -> main (creates pending approval,
+                                main shows OS notification if unfocused)
+  'agent:approval-response' -> renderer -> main (approve/deny/edit, with
+                                actionId)
+  'agent:approval-pending'  -> main -> renderer (push new pending approval
+                                to ApprovalQueue)
+
+================================================================================
+SECTION 5: PROGRESS TRACKER (RIGHT PANEL)
+================================================================================
+
+RightPanel.jsx — new panel, 300px wide, resizable, toggleable via icon in
+TopBar (only meaningful in "coding" work mode, but available in both).
+Sits to the right of Chat Panel. Auto-opens when an agent run starts.
+
+Contents — ProgressTracker.jsx:
+  - PlanCard at top: numbered list of steps from the AI's plan (reuses
+    Phase 1 "Multi-step Task Executor" plan output — now rendered here
+    instead of only in chat).
+  - Each step shows:
+      icon: ○ pending | ⟳ running (spinning) | ✓ done (green) |
+            ✗ failed (red) | ⏸ paused | ⊘ skipped
+      title, short description
+      expandable details: files touched, terminal output snippet,
+      duration ("2.3s")
+  - Top toolbar: [Pause] [Stop] [Skip Step] — wired to agentStore actions
+    which call agentHandler.js over IPC to actually pause/kill the running
+    process or skip to next planned step.
+  - Per-step "Edit Step" (pencil icon) — opens a small editor to modify
+    the step's instruction BEFORE it runs (only enabled while step status
+    is 'pending').
+  - Overall progress bar at top of PlanCard: "Step 3 of 5 — 42%".
+  - When run finishes: summary footer — "Completed in 1m 12s. 4 files
+    changed, 2 commands run." with a "Open Review" button (Section 6).
+
+agentStore.js shape:
+  {
+    plan: { id, title, steps: [{id, title, description, status, files,
+            output, durationMs}], currentStepIndex },
+    runState: 'idle' | 'running' | 'paused' | 'completed' | 'error' |
+              'stopped',
+    pendingApprovals: ApprovalRequest[],
+    startRun(plan), pause(), resume(), stop(), skipStep(id),
+    editStep(id, newInstruction), resolveApproval(id, decision)
+  }
+
+agentHandler.js (electron):
+  - Executes steps sequentially, emitting 'agent:step-update' events.
+  - Before any medium/high risk action, emits 'agent:approval-pending'
+    and BLOCKS that step until 'agent:approval-response' is received.
+  - Honors pause/stop/skip signals between steps (and mid-terminal-command
+    via SIGINT for stop).
+
+================================================================================
+SECTION 6: REVIEW BUTTON + CODE REVIEW MODE (INLINE / DETACHED)
+================================================================================
+
+Every AI-driven file change (whether from chat code blocks, "Apply to
+File", or an agent run step) gets logged as a ChangeRecord:
+  { id, filePath, beforeContent, afterContent, timestamp, stepId|messageId,
+    status: 'pending_review' | 'reviewed' | 'reverted' }
+
+ReviewButton.jsx:
+  - Appears (a) on MessageBubble when AI produced a file change, and
+    (b) on each completed step in ProgressTracker, and (c) as a badge on
+    Sidebar/StatusBar showing total pending review count, e.g. "Review (3)".
+  - Clicking opens ReviewPanel in the mode set by user preference
+    (Inline or Detached — Settings > Editor > Code Review Mode).
+
+ReviewPanel.jsx — INLINE mode:
+  - Opens directly below the triggering message / step, expanding in
+    place (push content down, 200ms animation).
+  - Reuses Phase 1 DiffViewer for the visual diff.
+  - Buttons: [Apply All] [Apply Hunk] [Reject All] [Mark Reviewed]
+    [Revert] (revert restores beforeContent and writes file).
+  - Each hunk has an "AI explanation" tooltip (why this change was made —
+    pulled from the AI response text near that code block).
+
+ReviewDetached.jsx — DETACHED mode:
+  - Opens the same review UI in a separate Electron BrowserWindow (uses
+    Phase 2B "Popout Window" infra if available; if 2B not yet built,
+    use a plain new BrowserWindow with shared preload).
+  - Detached window lists ALL pending ChangeRecords for the session in a
+    left list, DiffViewer on the right — like a lightweight PR review tool.
+  - Changes made (approve/reject/revert) sync back to main window via IPC
+    ('review:update') so ProgressTracker / badges update live.
+
+Settings addition (SettingsPanel.jsx > Editor section):
+  "Code Review Mode: ( ) Inline  ( ) Detached"  — default Inline.
+
+Database addition (Section 9 below covers schema).
+
+================================================================================
+SECTION 7: FOLLOW-UP BEHAVIOR (QUEUE / STEER)
+================================================================================
+
+While agentStore.runState === 'running' (or while AI is streaming a
+response), the ChatInput area shows FollowUpBar.jsx instead of being
+disabled:
+
+  - Placeholder: "Add a follow-up instruction..."
+  - Two send-mode buttons next to the input:
+      "Queue"  -> message is stored and will be sent to the AI as
+                  additional context AFTER the current run/response
+                  finishes. Shown in chat immediately with a small
+                  "Queued — will send after current task" badge.
+      "Steer"  -> message is injected into the CURRENT run immediately:
+                  if streaming a response, this aborts the current
+                  generation and re-sends with the new instruction
+                  appended to context; if an agent run is in progress,
+                  the instruction is inserted as a new step right after
+                  the currently-executing step (plan is re-rendered in
+                  ProgressTracker with the new step highlighted "Added").
+  - Default mode is remembered per work mode (settingsStore.aiSettings
+    .followUpDefault: 'queue' | 'steer', default 'queue' for "everyday",
+    'steer' for "coding").
+  - Keyboard: Enter = use default mode, Shift+Enter = newline (existing),
+    Ctrl+Enter = use the OTHER mode (quick toggle).
+
+================================================================================
+SECTION 8: CONTEXT WINDOW USAGE DISPLAY
+================================================================================
+
+TokenMeter.jsx — small horizontal bar + label in TopBar, right side,
+left of the model selector.
+
+  - Shows: "12.4K / 200K tokens" with a colored fill bar:
+      green   (<70% of model's context window)
+      amber   (70–90%)
+      red     (>90%)
+  - Computed via useTokenUsage.js using existing tokenCounter.js:
+      total = sum(tokens of all messages in active session within
+              contextMessages window) + sum(tokens of attached
+              files/images, estimated) + system prompt tokens.
+  - Hover tooltip breaks it down: "System prompt: 0.3K · History: 8K ·
+    Attachments: 4.1K".
+  - When usage crosses 90%, show the existing Phase 1 warning behavior
+    ("Old messages removed to fit context window") AND highlight the
+    TokenMeter red with a pulse for 2s.
+  - Model's context window size pulled from a small static map in
+    tokenCounter.js (e.g. gpt-4o: 128000, claude: 200000, gemini: 1000000,
+    ollama models: read from model metadata if available, else default
+    8192) — keep this table easy to extend.
+
+================================================================================
+SECTION 9: SIDEBAR COMPLETION — NEW CHAT, SEARCH, PLUGINS, AUTOMATIONS
+================================================================================
+
+These existed as "partial" in Phase 1. Make them fully real:
+
+--- 9A. New Chat (NewChatButton.jsx) ---
+  - Creates a new chat_sessions row immediately (not lazily on first
+    message), title = "New Chat", switches activeSessionId, clears
+    messages, resets agentStore to idle, closes RightPanel if open.
+  - Keyboard shortcut: Ctrl+N (Cmd+N on mac).
+
+--- 9B. Search (ChatSearch.jsx) ---
+  - Search icon in Sidebar opens a search overlay (Cmd/Ctrl+K) with a
+    text input.
+  - Searches across: chat session titles, message content (SQLite
+    FULL TEXT search — add FTS5 virtual table `messages_fts` over
+    `messages.content`), and file names in the currently open project.
+  - Results grouped by type: "Chats", "Messages", "Files" — clicking a
+    message result opens that session and scrolls to/highlights the
+    message.
+
+--- 9C. Plugins (PluginsPanel.jsx) ---
+  - Accessible from Sidebar "Plugins" entry.
+  - pluginRegistry.js ships with these BUILT-IN plugins (real, working):
+      1. "Markdown Exporter" — adds "Export chat as PDF" option (uses
+         existing export-as-markdown from Phase 1, converts via a simple
+         HTML->PDF using Electron's printToPDF).
+      2. "Snippet Library" — save any AI code block to a personal
+         snippet library (stored in SQLite `snippet_history` table from
+         Phase 1, now with a browsable UI + "Insert" button).
+      3. "Commit Message Generator" — reads `git diff --staged` (via
+         terminalHandler) and generates a conventional-commit message,
+         with a "Use this message & commit" button.
+  - Each PluginCard shows: name, description, toggle (enabled/disabled),
+    and any plugin-specific settings. Disabling a plugin hides its UI
+    hooks (e.g. removes the "Generate Commit Message" button from the
+    Git context menu — Git menu itself may be Phase 2B, but the plugin
+    toggle logic must exist now and gracefully no-op if the menu isn't
+    present yet).
+  - "Add Plugin" button: for Phase 2A, this opens a simple form to
+    register a "Custom Prompt Plugin" — name + trigger phrase + prompt
+    template, stored in settingsStore. No external plugin marketplace
+    yet (that's a future phase) — but the mechanism must be real and
+    persisted.
+
+--- 9D. Automations (AutomationsPanel.jsx) ---
+  - Accessible from Sidebar "Automations" entry.
+  - An automation = { id, name, trigger, promptTemplate, enabled,
+    lastRun, runCount }.
+  - Trigger types for Phase 2A (keep to what's achievable without 2B's
+    Hooks/Git integration):
+      "manual"      -> run on-demand via a "Run" button only.
+      "on_file_save" -> runs automatically whenever projectStore detects
+                        a file save matching a glob pattern (e.g.
+                        "**/*.test.js" -> run "Generate missing tests"
+                        automation on the saved file's sibling source
+                        file). Implemented via chokidar or fs.watch in
+                        fileHandler.js, IPC event 'file:saved'.
+      "on_schedule"  -> cron-like, e.g. "every 30 min while app open" —
+                        uses setInterval in main process, NOT a real OS
+                        cron (keep scope realistic).
+  - AutomationEditor.jsx: form to create/edit — name, trigger type +
+    params, prompt template (supports {{filePath}}, {{fileContent}},
+    {{diff}} placeholders), and which permission mode it runs under
+    (defaults to the global mode, but can be restricted to "Default"
+    even if global is "Full access" — i.e. automations can be MORE
+    restrictive but never less).
+  - Running an automation creates a normal agent run (reuses
+    agentStore/ProgressTracker) tagged with the automation's name so the
+    user can see "Automation: Generate missing tests" in the tracker.
+  - AutomationCard shows: name, trigger summary, enabled toggle, last
+    run time, run count, [Run Now] [Edit] [Delete].
+
+================================================================================
+SECTION 10: STATE MANAGEMENT ADDITIONS (Zustand)
+================================================================================
+
+permissionsStore.js:
+  {
+    mode: 'default' | 'auto-review' | 'full-access',
+    projectRules: { [projectPath]: { [actionType]: 'allow' | 'ask' } },
+    setMode(mode),
+    setProjectRule(projectPath, actionType, rule)
+  }
+
+automationStore.js:
+  {
+    automations: Automation[],
+    addAutomation(automation),
+    updateAutomation(id, patch),
+    deleteAutomation(id),
+    runAutomation(id),       // triggers agentStore.startRun under the hood
+    toggleAutomation(id)
+  }
+
+appStore.js additions:
+  {
+    workMode: 'coding' | 'everyday',
+    rightPanelOpen: boolean,
+    reviewMode: 'inline' | 'detached',
+    pendingReviewCount: number
+  }
+
+================================================================================
+SECTION 11: DATABASE SCHEMA ADDITIONS
+================================================================================
+
+Add to electron/database.js (run as migrations, do not break Phase 1 data):
+
+CREATE TABLE IF NOT EXISTS change_records (
+  id TEXT PRIMARY KEY,
+  session_id TEXT,
+  step_id TEXT,
+  file_path TEXT NOT NULL,
+  before_content TEXT,
+  after_content TEXT,
+  status TEXT DEFAULT 'pending_review', -- pending_review|reviewed|reverted
+  created_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS approvals_log (
+  id TEXT PRIMARY KEY,
+  session_id TEXT,
+  action_type TEXT,
+  description TEXT,
+  decision TEXT,        -- approved|denied|edited
+  created_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS automations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  trigger_type TEXT NOT NULL,
+  trigger_params TEXT,   -- JSON
+  prompt_template TEXT,
+  permission_mode TEXT,
+  enabled INTEGER DEFAULT 1,
+  last_run INTEGER,
+  run_count INTEGER DEFAULT 0
+);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+  content, session_id UNINDEXED, message_id UNINDEXED
+);
+-- Populate via triggers on INSERT/UPDATE/DELETE of `messages`.
+
+================================================================================
+SECTION 12: UI DESIGN ADDITIONS
+================================================================================
+
+Reuse the Phase 1 color palette (Section 11 of original file). New
+elements:
+
+  Progress step states:
+    pending  -> Text Muted (#52525B) circle outline
+    running  -> Primary (#7C3AED) spinner
+    done     -> Success (#22C55E) check
+    failed   -> Error (#EF4444) cross
+    paused   -> Warning (#F59E0B) pause icon
+    skipped  -> Text Secondary (#A1A1AA) dashed circle
+
+  Approval card:
+    Border-left: 3px solid Warning (#F59E0B)
+    Background: Surface2 (#1C1C1C)
+    Buttons: Approve = Success, Deny = Error (outline), Edit = neutral
+
+  TokenMeter bar:
+    Track: Border color (#2A2A2A), height 4px, rounded
+    Fill: Success/Warning/Error per thresholds above
+
+  Full-access banner:
+    Background: rgba(245, 158, 11, 0.12), text Warning (#F59E0B),
+    24px height, sits below TopBar, dismissible per-session (reappears
+    next launch while mode = full-access).
+
+  RightPanel: same Surface (#141414) as Chat Panel, 300px default,
+  min 240px, max 480px, resizable handle same style as existing panels.
+
+  Layout note: with RightPanel open in "coding" mode, panel order becomes:
+    FileTree (220px) | Editor (flex-1) | Chat (380px) | RightPanel (300px)
+  All still individually toggleable; total width management same as
+  Phase 1 (overflow -> reduce Editor flex first).
+
+================================================================================
+SECTION 13: NEW IPC CHANNELS SUMMARY
+================================================================================
+
+  'agent:start-run'          renderer -> main  (plan -> begin execution)
+  'agent:step-update'        main -> renderer  (status/progress per step)
+  'agent:approval-pending'   main -> renderer
+  'agent:approval-response'  renderer -> main
+  'agent:control'            renderer -> main  ({pause|resume|stop|skip})
+  'review:list'              renderer -> main  (get change_records)
+  'review:action'            renderer -> main  ({id, action: apply|reject
+                                                  |revert|mark_reviewed})
+  'review:update'            main -> renderer  (sync across windows)
+  'file:saved'               main -> renderer  (for on_file_save triggers)
+  'automation:run'           renderer -> main
+  'search:query'             renderer -> main  (FTS5 query across tables)
+  'notify:show'              main -> renderer/OS (system toast)
+
+================================================================================
+SECTION 14: IMPLEMENTATION ORDER (PHASE 2A)
+================================================================================
+
+1.  Database migrations (Section 11) — additive only, preserve Phase 1 data.
+2.  permissionsStore.js + approvalRules.js + usePermissions.js
+3.  agentStore.js + agentHandler.js + IPC channels (Section 13)
+4.  ApprovalRequest.jsx + ApprovalQueue.jsx + system notification wiring
+5.  RightPanel.jsx + ProgressTracker.jsx + PlanCard.jsx (wire to agentStore)
+6.  ReviewButton.jsx + ReviewPanel.jsx (inline) -> ReviewDetached.jsx
+7.  PermissionsSettings.jsx + Full-access banner
+8.  WorkModeToggle.jsx + WorkModeSettings.jsx + layout reflow logic
+9.  TokenMeter.jsx + useTokenUsage.js (extend tokenCounter.js)
+10. FollowUpBar.jsx + Queue/Steer logic in useChat.js / useAgentRun.js
+11. NewChatButton.jsx completion + Ctrl+N shortcut
+12. ChatSearch.jsx + FTS5 table + triggers + search overlay (Ctrl/Cmd+K)
+13. pluginRegistry.js + PluginsPanel.jsx + 3 built-in plugins
+14. automationStore.js + AutomationsPanel.jsx + AutomationEditor.jsx +
+    file-watch trigger (fileHandler.js) + interval trigger (main.js)
+15. End-to-end test: run a multi-step agent task in "Default" permission
+    mode (every write requires approval), then in "Full access" (no
+    prompts but Review panel populates), then test Queue vs Steer
+    mid-run, then test an on_file_save automation.
+
+================================================================================
+SECTION 15: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of the EXISTING Phase 1 codebase — do not regenerate files
+   that already work; extend them.
+
+2. Every new button/toggle must be wired to real state and, where
+   applicable, real IPC calls to the main process. No placeholder
+   onClicks.
+
+3. The approval/permission flow is the heart of this phase — test it
+   thoroughly with all three modes before moving on.
+
+4. Keep the "destructive action always needs approval" floor HARD-CODED
+   regardless of permission mode — do not expose a setting to disable it.
+
+5. All new SQLite tables must be created with IF NOT EXISTS and must not
+   require the user to delete their existing database.
+
+6. Follow the existing dark/light theme variables — do not hardcode new
+   colors outside the palette in Section 12.
+
+7. When in doubt about scope, prefer the FULL working version of a
+   Phase 2A feature over a stub — but do NOT implement Phase 2B items
+   (MCP, Browser, Computer use, Hooks/Git/Worktrees, Agent environment
+   selector, terminal shell selector, popout window, dictation,
+   notification center) even if referenced tangentially above; leave
+   clean extension points (e.g. ReviewDetached using a plain
+   BrowserWindow now, swappable for the Phase 2B popout system later).
+
+START BUILDING NOW. FOLLOW SECTION 14 IN ORDER.
+
+================================================================================
+END OF PHASE 2A INSTRUCTIONS
+================================================================================

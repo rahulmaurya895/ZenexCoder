@@ -1,0 +1,164 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 10 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART9_BUILD_INSTRUCTIONS.txt
+   THEME: "DICTATION, NOTIFICATION CENTER & FINAL POLISH"
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Parts 1-9 built an entire ecosystem: Connections Hub, Git Core, Worktrees, 
+Environments, MCP Servers, Browser Integration, Computer Use, Hooks, 
+Windows Sandbox, Shell Selector, and Popout Window.
+Part 10 SCOPE (build now):
+  1. Dictation (Voice Input) — Use the native Web Speech API to allow developers 
+     to speak their prompts instead of typing.
+  2. Notification Center — A central hub to catch and log all system toasts, 
+     errors, and background agent approvals generated in Parts 1-9.
+  3. Connections Hub Final Wiring — Flip the final cards ('dictation' and 
+     'notifications') to 'available'.
+  4. Final End-to-End Polish — Ensure all stores and IPC handlers clean up 
+     memory properly on app exit.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 10 ONLY)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   ├── dictation/
+│   │   └── DictationMic.jsx          (Microphone button with pulse animation 
+│   │                                   and Web Speech API logic)
+│   └── notifications/
+│       ├── NotificationCenter.jsx    (Slide-over panel listing all past toasts)
+│       └── NotificationToast.jsx     (The actual floating toast component 
+│                                       rendered globally via Portal)
+│
+├── store/
+│   └── notificationStore.js          (Array of logs, unread count, add/clear actions)
+│
+└── hooks/
+    └── useDictation.js               (Wraps SpeechRecognition API)
+
+================================================================================
+SECTION 2: DICTATION (VOICE INPUT)
+================================================================================
+
+Goal: Let the user click a mic icon in the ChatInput bar and speak their prompt.
+
+2.1 useDictation.js (src/hooks/)
+  - Utilize `window.SpeechRecognition` or `window.webkitSpeechRecognition`.
+  - Export state: `isListening`, `transcript`, `error`.
+  - Export functions: `startListening()`, `stopListening()`.
+  - Handle continuous transcription so the user can pause and continue speaking 
+    before sending the message.
+
+2.2 DictationMic.jsx
+  - Placed inside `ChatInput.jsx` (Phase 1) next to the Attach File button.
+  - Default state: Muted Mic icon (Text Secondary).
+  - Listening state: Primary color (#7C3AED) with a CSS radial pulse animation.
+  - When listening stops, automatically append the `transcript` to the existing 
+    text in the `ChatInput` textarea.
+
+================================================================================
+SECTION 3: NOTIFICATION CENTER
+================================================================================
+
+Goal: In Parts 2-9, we relied on a generic 'notify:show' IPC event. Now we 
+capture those, show a temporary toast, and keep a persistent history so the user 
+doesn't miss background agent actions.
+
+3.1 notificationStore.js
+  {
+    notifications: Notification[], // { id, title, message, type, timestamp, read }
+    unreadCount: number,
+    addNotification(payload),
+    markAllAsRead(),
+    clearAll()
+  }
+
+3.2 IPC Listener (App.jsx or Layout Root)
+  - Listen for `notify:show` from the main process.
+  - Dispatch to `notificationStore.addNotification()`.
+
+3.3 NotificationToast.jsx
+  - Rendered via a React Portal at the top-right of the screen.
+  - Automatically dismisses after 5 seconds.
+  - Color coded by type:
+    - Success (Green): Git push successful, Environment created.
+    - Warning (Amber): Agent needs approval, Network retry.
+    - Error (Red): MCP Connection failed, Git merge conflict.
+    - Info (Blue): File saved, Hook triggered.
+
+3.4 NotificationCenter.jsx
+  - Accessible via a Bell icon in the TopBar (with a small red badge for `unreadCount`).
+  - Slide-over panel (right side, similar to Progress Tracker).
+  - Lists notifications chronologically.
+  - "Clear All" button at the top.
+
+================================================================================
+SECTION 4: CONNECTIONS HUB WIRING (PART 10)
+================================================================================
+
+Flip the final two entries in connectionRegistry.js to 'available':
+  1. `dictation` -> Route to a small settings page (Select language/dialect).
+  2. `notifications` -> Route to NotificationCenter.jsx.
+
+At this point, ALL 12 cards in the Connections Hub should be green and active!
+
+================================================================================
+SECTION 5: FINAL MEMORY & LIFECYCLE POLISH
+================================================================================
+
+5.1 electron/main.js & Handlers
+  Ensure proper teardown on `app.on('before-quit')`:
+  - `mcpHandler.js`: Kill all running stdio server processes.
+  - `browserHandler.js`: Close Playwright Chromium instances.
+  - `computerHandler.js`: Release `nut.js` hooks.
+  - `sandboxHandler.js`: Force kill `.wsb` child processes.
+  - `localServerHandler.js`: Close the Express/HTTP webhook port.
+
+5.2 Database Cleanup
+  - Keep `approvals_log` and `change_records` trimmed to the last 1000 entries 
+    to prevent the SQLite DB from bloating over time. Add a startup cleanup routine 
+    in `electron/database.js`.
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER (PART 10)
+================================================================================
+
+1. useDictation.js + DictationMic.jsx — Build and wire into ChatInput.
+2. notificationStore.js — Create the Zustand store for logs.
+3. NotificationToast.jsx — Build the global floating toast system.
+4. NotificationCenter.jsx — Build the slide-over history panel.
+5. main.js — Implement the global teardown logic for all Phase 2B sub-processes.
+6. database.js — Add the 1000-row limit cleanup routine.
+7. connectionRegistry.js — Flip the final cards to 'available'.
+8. FINAL END-TO-END TEST:
+   - Click the Mic and speak: "Initialize a new project and configure the staging environment."
+   - Verify text appears in input. Send message.
+   - Verify Agent creates the environment (Part 3) and commits it to Git (Part 1).
+   - Verify the system toasts pop up and are securely logged in the Notification Center.
+   - Quit the app and verify no zombie processes (node-pty, playwright, mcp servers) 
+     are left running in the host OS Task Manager.
+
+================================================================================
+FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of the EXISTING Phase 1 + 2A + 2B (Parts 1-9) codebase.
+2. This is the final integration. Ensure there are no dead links, missing CSS 
+   variables, or unresolved promises in the IPC handlers.
+3. The Web Speech API works offline in some Chromium builds but may require 
+   internet in others. Wrap it in a `try/catch` and gracefully show a toast 
+   if dictation fails.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER. 
+CONGRATULATIONS ON COMPLETING THE NEXCODE ARCHITECTURE!
+================================================================================
+END OF PHASE 2B — PART 10 OF 10
+================================================================================

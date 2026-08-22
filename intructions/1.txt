@@ -1,0 +1,969 @@
+================================================================================
+   NEXCODE — COMPLETE BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   AI-Powered Developer Environment | Local-First + Cloud AI
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE
+================================================================================
+
+YOU ARE AN EXPERT ELECTRON + REACT + NODE.JS DEVELOPER.
+Your job: Build the complete "NexCode" desktop application exactly as described below.
+Do NOT skip any feature. Do NOT add placeholder/fake UI. Every feature must be FUNCTIONAL.
+After reading, create ALL files in the correct folder structure.
+
+================================================================================
+SECTION 1: PROJECT OVERVIEW
+================================================================================
+
+App Name: NexCode
+Type: Desktop Application (Windows + macOS + Linux)
+Framework: Electron + React (Vite) + Node.js
+Purpose: A fully local AI-powered developer environment — like VS Code + ChatGPT + Codex combined.
+         Supports OpenAI, Anthropic Claude, Google Gemini, AND local Ollama models.
+         Has a built-in Ollama installer and model downloader inside the app itself.
+
+================================================================================
+SECTION 2: COMPLETE FOLDER STRUCTURE
+================================================================================
+
+Create this EXACT structure. Every file listed must be created:
+
+nexcode/
+├── package.json
+├── vite.config.js
+├── electron.vite.config.js
+├── .env.example
+├── README.md
+│
+├── electron/
+│   ├── main.js                  (Electron main process)
+│   ├── preload.js               (Context bridge / IPC)
+│   └── handlers/
+│       ├── aiHandler.js         (All AI API calls — streaming)
+│       ├── fileHandler.js       (File/folder read-write)
+│       ├── terminalHandler.js   (Spawn terminal commands)
+│       ├── ollamaHandler.js     (Ollama install + model management)
+│       └── visionHandler.js     (Image/screenshot processing)
+│
+├── src/
+│   ├── main.jsx                 (React entry point)
+│   ├── App.jsx                  (Root component + routing)
+│   ├── index.css                (Global styles + CSS variables)
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── Sidebar.jsx          (Left nav: projects, history, settings)
+│   │   │   ├── TopBar.jsx           (Model selector, tokens, theme toggle)
+│   │   │   └── StatusBar.jsx        (Bottom: ollama status, model loaded, tokens used)
+│   │   │
+│   │   ├── editor/
+│   │   │   ├── CodeEditor.jsx       (Monaco editor wrapper)
+│   │   │   ├── DiffViewer.jsx       (Side-by-side original vs AI code)
+│   │   │   ├── FileTree.jsx         (Project folder tree)
+│   │   │   └── TabManager.jsx       (Multiple open files as tabs)
+│   │   │
+│   │   ├── chat/
+│   │   │   ├── ChatPanel.jsx        (Main AI chat interface)
+│   │   │   ├── MessageBubble.jsx    (Individual message with code blocks)
+│   │   │   ├── ChatInput.jsx        (Input box with file attach, image attach)
+│   │   │   └── StreamingText.jsx    (Real-time streaming token display)
+│   │   │
+│   │   ├── vision/
+│   │   │   ├── VisionPanel.jsx      (Drop image → get code/analysis)
+│   │   │   ├── ScreenCapture.jsx    (Take screenshot button)
+│   │   │   └── ImagePreview.jsx     (Show attached image in chat)
+│   │   │
+│   │   ├── terminal/
+│   │   │   └── Terminal.jsx         (xterm.js terminal emulator)
+│   │   │
+│   │   ├── ollama/
+│   │   │   ├── OllamaManager.jsx    (Install Ollama + download models UI)
+│   │   │   ├── ModelCard.jsx        (Each model: name, size, status, download btn)
+│   │   │   └── InstallWizard.jsx    (Step-by-step Ollama setup inside app)
+│   │   │
+│   │   └── settings/
+│   │       ├── SettingsPanel.jsx    (All settings: API keys, theme, defaults)
+│   │       ├── ApiKeyManager.jsx    (Input + test + save API keys securely)
+│   │       └── ModelSettings.jsx    (Temperature, max tokens, system prompt)
+│   │
+│   ├── hooks/
+│   │   ├── useAI.js             (AI call hook with streaming support)
+│   │   ├── useOllama.js         (Ollama status + model management hook)
+│   │   ├── useProject.js        (Open project, file tree, active file hook)
+│   │   ├── useChat.js           (Chat history, messages, context hook)
+│   │   └── useTheme.js          (Dark/light theme toggle hook)
+│   │
+│   ├── store/
+│   │   ├── appStore.js          (Zustand global state)
+│   │   ├── chatStore.js         (Chat sessions + history)
+│   │   ├── projectStore.js      (Open files, active project)
+│   │   └── settingsStore.js     (User settings, API keys, model prefs)
+│   │
+│   ├── services/
+│   │   ├── openaiService.js     (OpenAI API — GPT-4o, streaming, vision)
+│   │   ├── anthropicService.js  (Anthropic API — Claude Sonnet, streaming)
+│   │   ├── geminiService.js     (Google Gemini API — streaming)
+│   │   ├── ollamaService.js     (Local Ollama API — streaming, model list)
+│   │   └── visionService.js     (Image → base64, send to vision model)
+│   │
+│   └── utils/
+│       ├── codeParser.js        (Extract code blocks from AI response)
+│       ├── tokenCounter.js      (Estimate token count for context)
+│       ├── fileUtils.js         (Read file, detect language, format)
+│       ├── diffUtils.js         (Generate diff between two code strings)
+│       └── promptTemplates.js   (All AI prompt templates for each feature)
+│
+├── assets/
+│   ├── icon.png
+│   ├── icon.ico
+│   └── icon.icns
+│
+└── scripts/
+    └── ollamaInstaller.js       (Auto-detect OS, download Ollama binary)
+
+================================================================================
+SECTION 3: DEPENDENCIES — package.json
+================================================================================
+
+Create package.json with these EXACT dependencies:
+
+{
+  "name": "nexcode",
+  "version": "1.0.0",
+  "description": "AI-Powered Developer Environment",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "openai": "^4.47.0",
+    "@anthropic-ai/sdk": "^0.22.0",
+    "@google/generative-ai": "^0.12.0",
+    "zustand": "^4.5.2",
+    "monaco-editor": "^0.50.0",
+    "@monaco-editor/react": "^4.6.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-web-links": "^0.9.0",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
+    "rehype-highlight": "^7.0.0",
+    "highlight.js": "^11.10.0",
+    "diff": "^7.0.0",
+    "node-pty": "^1.0.0",
+    "better-sqlite3": "^11.0.0",
+    "electron-store": "^10.0.0",
+    "axios": "^1.7.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "lucide-react": "^0.383.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-vite": "^2.3.0",
+    "electron-builder": "^24.13.3",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.2.0",
+    "tailwindcss": "^3.4.4",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38"
+  }
+}
+
+================================================================================
+SECTION 4: ALL AI FEATURES — IMPLEMENT EVERY ONE
+================================================================================
+
+--- 4A. CODE GENERATION ---
+User types: "Create a Express.js REST API with JWT authentication"
+App sends prompt to selected AI model with system prompt:
+"You are an expert developer. Generate complete, production-ready code.
+ Always return code in markdown code blocks with language specified.
+ Add comments explaining key parts."
+Show result in chat + "Open in Editor" button.
+
+--- 4B. CODE COMPLETION ---
+User is in Monaco editor. Presses Ctrl+Space or dedicated button.
+App reads current file content + cursor position.
+Sends to AI: "Complete this code at the cursor position: [code above cursor]"
+Streams completion directly into editor at cursor position.
+
+--- 4C. CODE EXPLANATION ---
+User selects code in editor, right-clicks → "Explain This"
+OR pastes in chat.
+Prompt: "Explain this code line by line in simple terms: [code]"
+Returns formatted explanation in chat.
+
+--- 4D. REFACTOR & OPTIMIZE ---
+User selects code → "Refactor" button.
+Prompt: "Refactor this code for better readability, performance, and best practices.
+         Show the improved version with explanation of changes: [code]"
+Show in DiffViewer: original (left) vs refactored (right).
+Buttons: "Apply Changes" | "Reject" | "Apply Partially"
+
+--- 4E. BUG DETECTION & AUTO-FIX ---
+Button: "Scan for Bugs" on active file.
+Prompt: "Analyze this code for bugs, security issues, and potential errors.
+         List each issue with line number and provide fixed code: [code]"
+Highlight bug lines in Monaco with red markers.
+"Auto-fix All" button applies all fixes.
+
+--- 4F. UNIT TEST GENERATION ---
+Button: "Generate Tests" on active file/function.
+Prompt: "Generate comprehensive unit tests for this code using the appropriate
+         testing framework (Jest for JS, pytest for Python, etc.): [code]"
+Creates new file: [filename].test.js in same directory.
+
+--- 4G. DOCSTRING / COMMENT GENERATION ---
+Button: "Add Docs" → selects entire file or selection.
+Prompt: "Add JSDoc/docstring comments to all functions and classes.
+         Do not change any logic, only add documentation: [code]"
+Apply changes directly to editor.
+
+--- 4H. LANGUAGE TRANSLATION ---
+Dropdown: Source Language → Target Language
+Button: "Translate Code"
+Prompt: "Convert this [source_lang] code to [target_lang].
+         Maintain exact same logic and functionality: [code]"
+Opens result in new tab.
+
+--- 4I. REGEX GENERATOR ---
+User types: "Match email addresses that end in .com or .org"
+Prompt: "Generate a regex pattern for: [description]
+         Provide: 1) The regex, 2) Explanation, 3) Test examples"
+Show regex in copyable code block + test playground.
+
+--- 4J. CODE REVIEW ---
+Button: "AI Code Review" on active file.
+Prompt: "Perform a thorough code review. Check for:
+         - Code quality and readability
+         - Performance issues
+         - Security vulnerabilities
+         - Best practices violations
+         - Suggested improvements
+         Format as a numbered list with severity: [HIGH/MEDIUM/LOW]"
+
+================================================================================
+SECTION 5: VISION FEATURES — ALL MUST WORK
+================================================================================
+
+USE: OpenAI GPT-4o vision OR Anthropic Claude (both support vision).
+For local: use llava model via Ollama (add llava to recommended models list).
+
+--- 5A. SCREENSHOT → CODE ---
+User drops/pastes a UI screenshot.
+Prompt: "Look at this UI screenshot. Generate complete HTML + CSS + JavaScript code
+         that recreates this exact UI. Make it pixel-perfect with proper colors,
+         fonts, spacing, and layout. Use modern CSS (flexbox/grid)."
+Detect if it looks like React/Vue → offer framework-specific version.
+
+--- 5B. DIAGRAM → CODE ---
+User drops a flowchart / ERD / system diagram image.
+Prompt: "Analyze this diagram and generate the corresponding code implementation.
+         If it's an ERD: generate database schema SQL.
+         If it's a flowchart: generate the algorithm/function.
+         If it's a system diagram: generate the architecture code."
+
+--- 5C. BUG SCREENSHOT ANALYSIS ---
+User takes/drops a screenshot of an error or broken UI.
+Prompt: "Analyze this screenshot showing a bug or error. Identify:
+         1. What the error/problem is
+         2. What is causing it
+         3. The exact fix with code
+         4. How to prevent it in future"
+
+--- 5D. DOCUMENT / PDF → STRUCTURED DATA ---
+User drops an image of a document, form, or PDF page.
+Prompt: "Extract all data from this document image. Return as:
+         1. JSON structure with all fields and values
+         2. Markdown table for tabular data
+         3. Plain text for paragraphs"
+
+--- 5E. HANDWRITTEN NOTES → CODE/TEXT ---
+User drops photo of handwritten notes or pseudocode.
+Prompt: "Read this handwritten content and:
+         If it's pseudocode/algorithm: convert to actual working code
+         If it's notes: transcribe and organize as structured markdown
+         If it's a diagram: describe and implement it"
+
+--- 5F. UI REVIEW & IMPROVEMENT ---
+User drops a UI screenshot.
+Prompt: "Review this UI design as a senior UX designer. Provide:
+         1. Current issues (visual hierarchy, UX problems, accessibility)
+         2. Specific improvements with reasoning
+         3. Updated CSS/code suggestions for each improvement
+         Rate overall design: [1-10] with justification"
+
+================================================================================
+SECTION 6: OLLAMA — BUILT-IN INSTALLER & MODEL MANAGER
+================================================================================
+
+THIS IS A KEY FEATURE. Build a complete Ollama management system inside the app.
+
+--- 6A. OLLAMA INSTALL WIZARD (InstallWizard.jsx) ---
+
+Show this wizard when Ollama is not detected on the system.
+
+Step 1: "Detecting your system..."
+  - Auto-detect OS: Windows / macOS / Linux
+  - Show detected: "Windows 11 x64 detected"
+  - Show hardware: "Intel i3-12th Gen | 8GB RAM detected"
+
+Step 2: "Installing Ollama"
+  - Download Ollama installer for detected OS from: https://ollama.ai/download
+  - Windows: download OllamaSetup.exe, run it silently
+  - macOS: download Ollama.dmg, mount and install
+  - Linux: run: curl -fsSL https://ollama.ai/install.sh | sh
+  - Show real download progress bar (bytes downloaded / total)
+  - Show install progress log
+
+Step 3: "Setup Complete"
+  - Verify Ollama is running: GET http://localhost:11434/api/version
+  - Show: "Ollama v[version] running successfully ✓"
+  - Auto-proceed to model download
+
+--- 6B. RECOMMENDED MODELS FOR i3 12th Gen + 8GB RAM ---
+
+Show these models as "Recommended for your hardware":
+
+PRIMARY (Best for coding):
+  Name: "Qwen 2.5 Coder 7B" (RECOMMENDED BADGE)
+  Model ID: qwen2.5-coder:7b
+  Size: 4.7 GB
+  Strength: "Best coding model for 8GB RAM — Python, JS, Go, Rust"
+  RAM needed: 6GB
+  Command: ollama pull qwen2.5-coder:7b
+
+ALTERNATIVE (If more RAM available after OS):
+  Name: "DeepSeek Coder V2 Lite"
+  Model ID: deepseek-coder-v2:lite
+  Size: 8.9 GB
+  Strength: "Advanced code generation, slightly better than Qwen on complex tasks"
+  RAM needed: 8GB (tight — warn user)
+  Warning: "Might be slow on 8GB RAM. Recommended only if no other apps running."
+  Command: ollama pull deepseek-coder-v2:lite
+
+VISION (For vision features locally):
+  Name: "LLaVA 7B"
+  Model ID: llava:7b
+  Size: 4.7 GB
+  Strength: "Analyze images, screenshots, diagrams locally"
+  Command: ollama pull llava:7b
+
+GENERAL CHAT:
+  Name: "Llama 3.2 3B" (Fastest)
+  Model ID: llama3.2:3b
+  Size: 2.0 GB
+  Strength: "Quick responses, general questions, fastest on your hardware"
+  Command: ollama pull llama3.2:3b
+
+--- 6C. MODEL DOWNLOAD UI (ModelCard.jsx) ---
+
+Each model card shows:
+  - Model name + badge (RECOMMENDED / VISION / FAST)
+  - Description of what it's good for
+  - File size
+  - RAM requirement + warning if tight
+  - Status: [Not Downloaded] [Downloading...] [Ready ✓] [Running 🟢]
+  - Button: "Download" → "Cancel" during download → "Load Model" after
+  - Download progress: real-time progress bar + MB downloaded + speed + ETA
+  - "Delete" button for downloaded models (shows space freed)
+
+--- 6D. OLLAMA STATUS BAR (StatusBar.jsx) ---
+
+Always visible at bottom of app:
+  Left: 🟢 Ollama Running | 🔴 Ollama Stopped | 🟡 Starting...
+  Center: Active Model: qwen2.5-coder:7b | No model loaded
+  Right: RAM used by model: ~4.2 GB | Response time: 1.2s avg
+
+--- 6E. OLLAMA SERVICE (ollamaService.js) ---
+
+Implement these functions:
+  - checkOllamaInstalled() → check if ollama binary exists
+  - checkOllamaRunning() → GET localhost:11434/api/version
+  - startOllama() → spawn ollama serve process
+  - stopOllama() → kill ollama process
+  - listModels() → GET localhost:11434/api/tags
+  - pullModel(modelName, onProgress) → POST /api/pull with streaming progress
+  - deleteModel(modelName) → DELETE /api/delete
+  - runPrompt(modelName, prompt, onToken) → POST /api/generate streaming
+  - runChat(modelName, messages, onToken) → POST /api/chat streaming
+  - getRunningModels() → GET /api/ps
+  - loadModel(modelName) → preload model into RAM
+
+================================================================================
+SECTION 7: AGENTIC FEATURES
+================================================================================
+
+--- 7A. MULTI-STEP TASK EXECUTOR ---
+
+User types: "Add user authentication with JWT to my Express project"
+
+Step 1: AI analyzes the project (reads file tree + key files)
+Step 2: AI creates a plan:
+  Plan:
+  [1] Install dependencies: express-jwt, jsonwebtoken, bcrypt
+  [2] Create middleware/auth.js
+  [3] Create routes/auth.js (login, register, refresh)
+  [4] Update app.js to use auth middleware
+  [5] Create .env variables for JWT_SECRET
+
+Show plan to user. User clicks "Execute Plan"
+
+Step 3: Execute each step, show live:
+  ✓ Step 1: Running npm install... (show terminal output)
+  ✓ Step 2: Creating middleware/auth.js... (show file being written)
+  ⟳ Step 3: Creating routes/auth.js... (in progress)
+  ○ Step 4: Pending
+  ○ Step 5: Pending
+
+User can: Pause | Stop | Skip Step | Edit Step
+
+--- 7B. AUTO-DEBUG LOOP ---
+
+User: "Run my code and fix any errors automatically"
+
+Loop:
+  1. Run file in terminal
+  2. Capture stdout + stderr
+  3. If error: send error + code to AI
+  4. AI suggests fix
+  5. Apply fix
+  6. Run again
+  7. Repeat until success OR max 5 iterations
+  8. Show full debug log to user
+
+--- 7C. TERMINAL INTEGRATION (Terminal.jsx) ---
+
+Use xterm.js for full terminal emulator.
+- Real bash/PowerShell/zsh (use node-pty)
+- Run commands from AI chat with "Run in Terminal" button
+- Capture output and send back to AI context
+- AI can suggest commands, user approves before running
+- Show: "AI wants to run: npm install express" [Run] [Edit] [Cancel]
+
+================================================================================
+SECTION 8: EDITOR FEATURES
+================================================================================
+
+Use Monaco Editor (same as VS Code).
+
+--- 8A. Monaco Setup (CodeEditor.jsx) ---
+
+- Load Monaco with all language support
+- Dark theme: vs-dark | Light theme: light
+- Enable: intelliSense, bracket matching, minimap, line numbers
+- Custom keybindings:
+  Ctrl+Space → trigger AI completion
+  Ctrl+Shift+E → explain selected code
+  Ctrl+Shift+F → fix selected code
+  Ctrl+Shift+R → refactor selected code
+  Ctrl+Shift+T → generate tests for file
+
+--- 8B. File Tree (FileTree.jsx) ---
+
+- Recursive folder display
+- Icons by file type (use file extension → icon mapping)
+- Right-click context menu:
+  "Open" | "Rename" | "Delete" | "Copy Path"
+  "AI: Explain This File" | "AI: Generate Tests" | "AI: Review Code"
+- Drag files into chat to add as context
+
+--- 8C. Tab Manager (TabManager.jsx) ---
+
+- Multiple files open as tabs
+- Tab shows: file icon + filename + dirty indicator (•) if unsaved
+- Ctrl+W to close tab
+- Ctrl+Tab to cycle tabs
+- Right-click tab: "Close Others" | "Close All" | "Copy Path"
+
+--- 8D. Diff Viewer (DiffViewer.jsx) ---
+
+- Side by side view: Original (left) | AI Version (right)
+- Highlight additions in green, deletions in red
+- Line-by-line change markers
+- "Apply All" | "Apply Hunk" | "Reject All" buttons
+- Inline comment showing why AI made each change
+
+================================================================================
+SECTION 9: CHAT INTERFACE
+================================================================================
+
+--- 9A. Chat Panel (ChatPanel.jsx) ---
+
+- Conversation history persisted in SQLite via electron-store
+- Each chat session has: title (auto-generated), date, model used
+- "New Chat" button
+- Search through chat history
+- Export chat as Markdown
+
+--- 9B. Message Bubbles (MessageBubble.jsx) ---
+
+User messages: right-aligned, blue background
+AI messages: left-aligned, dark card
+
+Code blocks in AI messages:
+  - Syntax highlighted with highlight.js
+  - Language label in top-right
+  - Copy button
+  - "Open in Editor" button
+  - "Run in Terminal" button (if it's a command)
+  - "Apply to File" button (if file is open)
+
+--- 9C. Chat Input (ChatInput.jsx) ---
+
+- Multi-line text input (Shift+Enter for newline, Enter to send)
+- Attach file button → opens file picker → file content added to context
+- Attach image button → opens image picker → for vision features
+- Paste image from clipboard (Ctrl+V) → auto-detect and add
+- Voice input button (Web Speech API)
+- Token counter showing: "~450 tokens" for current input + context
+- Model selector dropdown right in input bar
+- @ mention to reference open files: type @filename
+
+--- 9D. Streaming (StreamingText.jsx) ---
+
+- Show AI response token by token as it arrives
+- Animated cursor at end of streaming text
+- Show "Thinking..." with pulse animation before first token
+- Stop generation button (red X) during streaming
+- Auto-scroll to bottom during streaming
+- Copy full response button after streaming completes
+
+================================================================================
+SECTION 10: SETTINGS PANEL
+================================================================================
+
+--- 10A. API Keys (ApiKeyManager.jsx) ---
+
+For each provider (OpenAI, Anthropic, Google):
+  - Password input field (hidden by default, eye icon to show)
+  - "Test Connection" button → makes test API call → shows ✓ or ✗
+  - "Save" button → encrypts and stores in electron-store
+  - Link to get API key (opens in browser)
+  - Current usage stats if available
+
+--- 10B. Model Settings ---
+
+- Default model selector (per task type: coding, chat, vision)
+- Temperature slider (0.0 → 2.0, default 0.7)
+- Max tokens input (default 4096)
+- Context window size (how many previous messages to include)
+- System prompt text area (customize AI personality/instructions)
+- Streaming toggle (on/off)
+
+--- 10C. Editor Settings ---
+
+- Font size (12-24px)
+- Font family (Fira Code, Cascadia Code, JetBrains Mono, Consolas)
+- Tab size (2 or 4 spaces)
+- Word wrap toggle
+- Minimap toggle
+- Auto-save toggle + interval
+
+--- 10D. App Settings ---
+
+- Theme: Dark | Light | System (auto)
+- Language: English | Hindi | Auto-detect
+- Start with OS (startup toggle)
+- Hardware acceleration toggle
+- Clear all data button (with confirmation)
+- Export all settings as JSON
+- Import settings from JSON
+
+================================================================================
+SECTION 11: UI DESIGN SPECIFICATIONS
+================================================================================
+
+THEME — Dark (default):
+  Background:     #0D0D0D  (near black)
+  Surface:        #141414  (cards, panels)
+  Surface2:       #1C1C1C  (elevated elements)
+  Border:         #2A2A2A  (subtle borders)
+  Primary:        #7C3AED  (violet — main accent)
+  Primary Light:  #A855F7  (hover states)
+  Success:        #22C55E  (green)
+  Warning:        #F59E0B  (amber)
+  Error:          #EF4444  (red)
+  Text Primary:   #F5F5F5  (main text)
+  Text Secondary: #A1A1AA  (muted text)
+  Text Muted:     #52525B  (very muted)
+  Code BG:        #111111  (code block background)
+
+THEME — Light:
+  Background:     #FAFAFA
+  Surface:        #FFFFFF
+  Surface2:       #F4F4F5
+  Border:         #E4E4E7
+  Primary:        #7C3AED
+  Text Primary:   #09090B
+  Text Secondary: #52525B
+
+TYPOGRAPHY:
+  UI Font:    "Inter" (import from Google Fonts)
+  Code Font:  "JetBrains Mono" (import from Google Fonts)
+  Font sizes: 11px (tiny), 12px (small), 13px (body), 14px (medium), 16px (large), 20px (heading)
+
+LAYOUT:
+  Left Sidebar: 240px wide (collapsible to 48px icons-only mode)
+  Top Bar: 40px height
+  Status Bar: 24px height
+  Main area: 3-panel layout:
+    File Tree: 220px (toggleable)
+    Editor: flex-1
+    Chat Panel: 380px (resizable, toggleable)
+  All panels resizable with drag handles
+
+SPACING: Use 4px base grid (4, 8, 12, 16, 20, 24, 32, 48px)
+
+ANIMATIONS:
+  - Panel open/close: 200ms ease-in-out
+  - Message appear: fade-in + slide-up 150ms
+  - Button hover: 100ms
+  - Streaming cursor: blink 1s infinite
+
+ICONS: Use Lucide React for all icons (already in dependencies)
+
+================================================================================
+SECTION 12: ELECTRON MAIN PROCESS
+================================================================================
+
+electron/main.js must:
+
+1. Create BrowserWindow (1280x800 min size, no frame on macOS, custom titlebar on Windows)
+2. Setup IPC handlers for ALL features:
+   - 'ai:stream' → stream AI response
+   - 'file:read' → read file content
+   - 'file:write' → write file content
+   - 'file:open-dialog' → open file picker dialog
+   - 'folder:open-dialog' → open folder picker
+   - 'folder:read-tree' → read recursive file tree
+   - 'terminal:run' → run command, stream output
+   - 'ollama:check' → check if ollama installed/running
+   - 'ollama:install' → run installer
+   - 'ollama:pull' → download model with progress
+   - 'ollama:models' → list downloaded models
+   - 'screen:capture' → capture screenshot
+   - 'app:get-path' → get user data path
+   - 'store:get' / 'store:set' / 'store:delete' → encrypted storage
+3. Auto-start Ollama on app launch if installed
+4. Handle app quit: gracefully stop Ollama process
+5. Custom menu bar with keyboard shortcuts
+6. Deep link support (nexcode:// protocol)
+7. Auto-updater setup
+
+electron/preload.js:
+Expose ALL IPC calls as window.nexcode.* methods using contextBridge.
+Example: window.nexcode.ai.stream(params, onToken, onDone, onError)
+
+================================================================================
+SECTION 13: STATE MANAGEMENT (Zustand)
+================================================================================
+
+appStore.js:
+{
+  theme: 'dark' | 'light',
+  sidebarOpen: boolean,
+  chatPanelOpen: boolean,
+  fileTreeOpen: boolean,
+  activePanel: 'editor' | 'chat' | 'split' | 'vision' | 'terminal',
+  ollamaStatus: 'not-installed' | 'stopped' | 'starting' | 'running',
+  activeModel: { provider, modelId, modelName },
+  isStreaming: boolean,
+  streamingAbort: AbortController | null
+}
+
+chatStore.js:
+{
+  sessions: ChatSession[],
+  activeSessionId: string,
+  messages: Message[],
+  addMessage(role, content, attachments),
+  clearSession(),
+  exportSession()
+}
+
+projectStore.js:
+{
+  projectPath: string | null,
+  fileTree: FileNode[],
+  openFiles: OpenFile[],
+  activeFileId: string | null,
+  openFile(path),
+  closeFile(id),
+  saveFile(id),
+  updateFileContent(id, content)
+}
+
+settingsStore.js:
+{
+  apiKeys: { openai, anthropic, google },
+  defaultModels: { coding, chat, vision },
+  editorSettings: { fontSize, fontFamily, tabSize, wordWrap },
+  aiSettings: { temperature, maxTokens, contextMessages, systemPrompt },
+  isFirstLaunch: boolean
+}
+
+================================================================================
+SECTION 14: PROMPT TEMPLATES (promptTemplates.js)
+================================================================================
+
+Export these EXACT prompt templates (AI will use them):
+
+SYSTEM_PROMPTS = {
+  coding: `You are NexCode AI, an expert software developer assistant.
+You write clean, production-ready, well-commented code.
+Always specify the programming language in code blocks.
+When generating files, show the complete file path as a comment at the top.
+Format: \`\`\`language\\n// filepath: path/to/file.ext\\n[code]\`\`\``,
+
+  vision: `You are NexCode Vision AI, an expert at analyzing visual content and converting it to code.
+When analyzing UI screenshots: generate complete, working HTML/CSS/JS.
+When analyzing diagrams: implement the logic shown.
+When analyzing errors: provide specific fixes with code.
+Be precise and thorough.`,
+
+  general: `You are NexCode AI, a helpful developer assistant.
+Answer clearly and concisely. Use code examples when helpful.
+Format code in proper markdown code blocks with language specified.`
+}
+
+USER_PROMPTS = {
+  generateCode: (desc, lang) => 
+    `Generate complete ${lang || ''} code for: ${desc}\nRequirements: Production-ready, error handled, well-commented.`,
+  
+  explainCode: (code, lang) =>
+    `Explain this ${lang} code in detail:\n\`\`\`${lang}\n${code}\n\`\`\`\nExplain: 1) What it does 2) How it works 3) Key concepts used`,
+  
+  refactorCode: (code, lang) =>
+    `Refactor this ${lang} code for better quality:\n\`\`\`${lang}\n${code}\n\`\`\`\nFocus: readability, performance, best practices. Explain each change.`,
+  
+  fixBugs: (code, lang, error) =>
+    `Fix bugs in this ${lang} code:\n\`\`\`${lang}\n${code}\n\`\`\`\n${error ? `Error: ${error}` : ''}\nProvide: fixed code + explanation of each bug found.`,
+  
+  generateTests: (code, lang) =>
+    `Generate comprehensive unit tests for this ${lang} code:\n\`\`\`${lang}\n${code}\n\`\`\`\nInclude: happy path, edge cases, error cases. Use appropriate test framework.`,
+  
+  translateCode: (code, fromLang, toLang) =>
+    `Convert this code from ${fromLang} to ${toLang}:\n\`\`\`${fromLang}\n${code}\n\`\`\`\nMaintain exact same logic. Use ${toLang} idioms and best practices.`,
+  
+  generateRegex: (desc) =>
+    `Generate a regex pattern for: "${desc}"\nProvide: 1) The regex 2) Explanation of each part 3) 5 test examples (matching and non-matching)`,
+  
+  screenshotToCode: (imageDescription) =>
+    `Convert this UI screenshot to complete code.\nGenerate: Full HTML + CSS (use modern CSS, flexbox/grid) + any needed JS.\nMake it pixel-perfect matching the screenshot. Include responsive design.`,
+  
+  diagramToCode: (imageDescription) =>
+    `Analyze this diagram and generate the complete code implementation.\nIdentify diagram type and implement accordingly:\n- ERD → SQL schema + ORM models\n- Flowchart → Algorithm implementation\n- System diagram → Architecture code with interfaces`,
+  
+  analyzeError: (imageDescription) =>
+    `Analyze this error/bug screenshot.\nProvide: 1) Root cause 2) Exact fix with code 3) Prevention strategy`,
+  
+  codeReview: (code, lang) =>
+    `Perform a thorough code review for this ${lang} code:\n\`\`\`${lang}\n${code}\n\`\`\`\nCheck: Code quality, Security vulnerabilities, Performance, Best practices.\nFormat each issue as: [HIGH/MEDIUM/LOW] Line X: Issue description → Suggested fix`
+}
+
+================================================================================
+SECTION 15: DATABASE SCHEMA (SQLite via better-sqlite3)
+================================================================================
+
+File: electron/database.js
+
+Create these tables on app startup:
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  model_provider TEXT,
+  model_id TEXT,
+  created_at INTEGER,
+  updated_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL,  -- 'user' | 'assistant' | 'system'
+  content TEXT NOT NULL,
+  attachments TEXT,    -- JSON array of attachments
+  model_id TEXT,
+  tokens_used INTEGER,
+  created_at INTEGER,
+  FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  path TEXT NOT NULL,
+  last_opened INTEGER,
+  settings TEXT  -- JSON: per-project AI settings
+);
+
+CREATE TABLE IF NOT EXISTS snippet_history (
+  id TEXT PRIMARY KEY,
+  type TEXT,           -- 'generation' | 'refactor' | 'test' | etc
+  input_code TEXT,
+  output_code TEXT,
+  language TEXT,
+  model_used TEXT,
+  created_at INTEGER
+);
+
+================================================================================
+SECTION 16: ERROR HANDLING & EDGE CASES
+================================================================================
+
+Handle these scenarios gracefully:
+
+1. API Key missing → Show clear message: "Add your [Provider] API key in Settings"
+   With direct link to Settings panel.
+
+2. API Key invalid → Test on save, show: "Invalid API key — please check and retry"
+
+3. Ollama not running → Show "Start Ollama" button in StatusBar, auto-retry every 5s
+
+4. Model not downloaded → Show "Download [ModelName] first" with one-click download
+
+5. Context too long → Auto-trim oldest messages, show warning: "Old messages removed to fit context window"
+
+6. Network error → Retry with exponential backoff (1s, 2s, 4s), show "Retrying..."
+
+7. File too large → Warn if file > 100KB: "Large file may exceed context limit. Summarize or select a portion?"
+
+8. No project open → Show empty state with: "Open a Folder to get started" button
+
+9. Streaming interrupted → Show: "Response interrupted. Continue?" button that resumes
+
+10. Out of disk space (Ollama download) → Detect and warn: "Not enough space. Need 5GB free."
+
+================================================================================
+SECTION 17: BUILD & DISTRIBUTION
+================================================================================
+
+electron-builder config in package.json:
+
+"build": {
+  "appId": "com.nexcode.app",
+  "productName": "NexCode",
+  "directories": { "output": "dist" },
+  "files": ["dist/**/*", "electron/**/*"],
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icon.ico"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "assets/icon.icns"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}
+
+================================================================================
+SECTION 18: FIRST-LAUNCH EXPERIENCE
+================================================================================
+
+When isFirstLaunch === true, show Welcome Screen:
+
+Step 1: "Welcome to NexCode" 
+  - Brief feature overview (4 cards: Code AI, Vision, Local Models, Terminal)
+  - "Let's set up your workspace"
+
+Step 2: "Choose your AI"
+  Option A: "Use Cloud AI" → OpenAI / Anthropic / Gemini (need API key)
+  Option B: "Use Local AI" → Ollama (free, private, works offline)
+  Option C: "Use Both" → Recommended
+
+Step 3a (if Cloud): Add API keys
+Step 3b (if Local): Install Ollama + Download first model (show model picker with recommendations)
+
+Step 4: "Choose your first model"
+  Auto-recommend based on detected hardware (check RAM, CPU)
+
+Step 5: "Open a Project or Start Chatting"
+  - "Open Folder" button
+  - "Start New Chat" button
+  - "Try a Demo" button (load sample project)
+
+================================================================================
+SECTION 19: IMPLEMENTATION ORDER
+================================================================================
+
+Build in this EXACT order to ensure everything works:
+
+1.  package.json + all config files (vite, tailwind, electron-vite)
+2.  electron/main.js — window creation + basic IPC
+3.  electron/preload.js — expose all APIs
+4.  electron/database.js — SQLite setup
+5.  electron/handlers/fileHandler.js
+6.  electron/handlers/terminalHandler.js
+7.  electron/handlers/ollamaHandler.js
+8.  src/index.css — CSS variables + global styles
+9.  src/services/ollamaService.js
+10. src/services/openaiService.js
+11. src/services/anthropicService.js
+12. src/services/geminiService.js
+13. src/services/visionService.js
+14. src/utils/ — all utility files
+15. src/store/ — all Zustand stores
+16. src/hooks/ — all custom hooks
+17. src/components/layout/ — Sidebar, TopBar, StatusBar
+18. src/components/editor/ — FileTree, TabManager, CodeEditor, DiffViewer
+19. src/components/chat/ — ChatPanel, MessageBubble, ChatInput, StreamingText
+20. src/components/vision/ — VisionPanel, ScreenCapture, ImagePreview
+21. src/components/terminal/ — Terminal
+22. src/components/ollama/ — InstallWizard, OllamaManager, ModelCard
+23. src/components/settings/ — SettingsPanel, ApiKeyManager, ModelSettings
+24. src/App.jsx — main layout assembly
+25. src/main.jsx — React entry
+26. electron/handlers/aiHandler.js — wire everything together
+27. Test all features end-to-end
+28. Build for distribution
+
+================================================================================
+SECTION 20: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Create EVERY file listed. No stubs, no TODOs. Fully working code only.
+
+2. Every component must have proper PropTypes OR TypeScript-style JSDoc.
+
+3. All async operations must have try/catch with meaningful error messages.
+
+4. Streaming MUST work — use ReadableStream or EventEmitter for all AI calls.
+
+5. Ollama integration MUST be real — actual HTTP calls to localhost:11434.
+
+6. Monaco editor MUST load properly — handle the webpack worker issue with
+   electron by using monaco-editor-webpack-plugin or the CDN loader approach.
+
+7. node-pty MUST be compiled for Electron — add postinstall script:
+   "postinstall": "electron-rebuild -f -w node-pty,better-sqlite3"
+
+8. DO NOT use any deprecated Electron APIs. Use contextIsolation: true,
+   nodeIntegration: false, and communicate ONLY via contextBridge.
+
+9. All API keys stored via electron-store with safeStorage encryption.
+
+10. App must work on Windows 10/11, macOS 12+, Ubuntu 20.04+.
+
+11. Every button must do something. No fake UI.
+
+12. When in doubt about a feature implementation: implement the FULL version,
+    not a simplified placeholder.
+
+START BUILDING NOW. CREATE ALL FILES IN ORDER FROM SECTION 19.
+
+================================================================================
+END OF BUILD INSTRUCTIONS
+================================================================================

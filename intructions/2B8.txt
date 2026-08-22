@@ -1,0 +1,203 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 8 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART7_BUILD_INSTRUCTIONS.txt
+   THEME: "HOOKS SYSTEM" — App Lifecycle & Physical Git Hooks Integration
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Parts 1-7 built: Connections Hub, Git Core, Environments, MCP Servers, 
+Browser Integration, and Computer Use.
+Phase 2A already introduced basic Automations[cite: 220, 221].
+Part 8 SCOPE (build now):
+  1. Background Webhook Server — A lightweight local HTTP server in the 
+     Electron main process to receive events from external processes (like 
+     external terminals running git commands).
+  2. Physical Git Hooks — Automatically generate and write bash scripts to 
+     `.git/hooks/pre-commit` and `pre-push` that trigger NexCode's agent.
+  3. App Lifecycle Hooks — Deep system events: `onProjectOpen`, `onBranchChange`, 
+     `onEnvChange`.
+  4. Hooks Panel — UI to bind these system/git events to Phase 2A Automations 
+     or custom Agent Prompts.
+  5. Connections Hub Wiring — Flip the 'hooks' card to 'available'.
+
+DO NOT implement: Agent env (Windows Sandbox), terminal shell selector, 
+popout window, dictation, or notifications. Those are Parts 9-10.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC[cite: 264].
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 8 ONLY)
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   └── hooks/
+│       ├── HooksPanel.jsx            (Full panel: List of configured hooks)
+│       ├── HookCard.jsx              (Single hook: Event trigger + Action)
+│       └── HookEditor.jsx            (Form to select Event Type, condition, 
+│                                       and Action payload)
+│
+├── store/
+│   └── hookStore.js                  (Configured hooks, enable/disable state)
+│
+└── hooks/
+    └── useHooks.js                   (Wraps hookHandler IPC calls)
+
+electron/handlers/
+├── hookHandler.js                    (Writes physical files to .git/hooks/, 
+                                        manages app event subscriptions)
+└── localServerHandler.js             (Tiny Express/HTTP server on a random 
+                                        port during app boot to listen for 
+                                        external git hook pings)
+
+================================================================================
+SECTION 2: BACKGROUND SERVER & PHYSICAL GIT HOOKS
+================================================================================
+
+Goal: If a user types `git commit -m "update"` in standard iTerm/Command Prompt, 
+NexCode should still intercept it to run the "AI Commit Review" automation.
+
+2.1 localServerHandler.js (electron/handlers/)
+  - On app launch, start a basic Node HTTP server on `127.0.0.1` (port auto-assigned).
+  - Store the port in a global config.
+  - Expose a single POST endpoint: `http://127.0.0.1:<port>/webhook`.
+  - When hit, it emits an IPC event to the renderer: `hook:external-trigger` 
+    with the payload (e.g., event: 'pre-commit', projectPath).
+
+2.2 hookHandler.js (electron/handlers/)
+  - IPC function: `installGitHook(projectPath, hookType)`
+    - Validates if `.git` folder exists.
+    - Writes a bash script to `.git/hooks/[hookType]` (e.g., pre-commit).
+    - The bash script uses `curl` to send a POST request to the 
+      localServerHandler's port (saving the port in a `.nexcode-port` temp file 
+      or using an environment variable injected by NexCode's terminal).
+    - Make the script executable (`chmod +x`).
+    - Script logic: "If NexCode server is reachable, wait for response. If 
+      response is 400/reject, abort commit (exit 1). If NexCode is closed, 
+      bypass and allow commit (exit 0)."
+
+2.3 App Lifecycle Events
+  - Hook into existing stores (projectStore, gitStore, environmentStore).
+  - When `activeProject` changes -> trigger `onProjectOpen`.
+  - When `gitStore.branch` changes -> trigger `onBranchChange`.
+
+================================================================================
+SECTION 3: THE HOOKS UI PANEL
+================================================================================
+
+Goal: Let the user bind triggers to actions visually.
+
+3.1 HooksPanel.jsx (Connections Hub slide-over or Sidebar tab)
+  - List of active HookCards.
+  - "+ Add Hook" button opens HookEditor.
+
+3.2 HookEditor.jsx
+  Form with 3 sections:
+  1. WHEN (The Trigger):
+     - Dropdown: Git Pre-Commit, Git Pre-Push, Project Opened, Branch Changed, 
+       File Saved (migrated from Phase 2A [cite: 223]).
+  2. IF (The Condition - Optional):
+     - e.g., "Branch name matches: feature/*"
+     - e.g., "File extension is: .js, .jsx"
+  3. THEN (The Action):
+     - Dropdown: Run Automation (loads list from `automationStore`), 
+       Run Agent Prompt (inline text input), 
+       Run Terminal Command.
+     - "Block execution if AI finds issues?" (Checkbox, relevant for pre-commit).
+
+3.3 HookCard.jsx
+  - Shows the logic: `[Pre-Commit] ➔ Run Automation: "AI Code Review"`
+  - Status Toggle (Enabled/Disabled).
+  - Hover: Edit / Delete icons.
+
+================================================================================
+SECTION 4: PERMISSIONS GATING (PHASE 2A TIE-IN)
+================================================================================
+
+Goal: Hooks execute automatically in the background. They must respect Phase 2A 
+permissions.
+
+4.1 automationStore & useAgentRun Integration
+  - When a hook triggers, it creates an agent run in the background.
+  - If the hook attempts a file_write or git_destructive action, and the 
+    global Permission Mode is "Default", it will HALT and show an ApprovalRequest 
+    card[cite: 153].
+  - If it is a Git Hook (e.g., pre-commit) and it halts for approval, the 
+    bash script will "hang" (wait) until the user clicks Approve/Deny in NexCode. 
+    If denied, the local server returns 400, and the bash script aborts the commit.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 8)
+================================================================================
+
+  'hook:install-git-hook'   renderer -> main  ({ projectPath, hookType })
+  'hook:remove-git-hook'    renderer -> main  ({ projectPath, hookType })
+  'hook:external-trigger'   main -> renderer  ({ event, projectPath, payload })
+  'hook:resolve-trigger'    renderer -> main  ({ triggerId, status: 'allow'|'block' })
+                            // Used to tell the waiting Express server to 
+                            // release the curl request from the bash script.
+
+================================================================================
+SECTION 6: CONNECTIONS HUB WIRING (PART 8)
+================================================================================
+
+Flip the 'hooks' entry in connectionRegistry.js from 'coming_soon' 
+to 'available'[cite: 278]:
+  {
+    id: 'hooks',
+    name: 'Hooks',
+    description: 'Bind AI automations to Git events and app lifecycle triggers',
+    icon: 'Link',
+    status: 'available',
+    settingsRoute: HooksPanel
+  }
+
+Ensure the ConnectionCard "Configure" button opens the HooksPanel.
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 8)
+================================================================================
+
+1. localServerHandler.js (electron) — Build the tiny HTTP listener and wire 
+   it to `hook:external-trigger`.
+2. hookHandler.js — Implement the bash script generation for `.git/hooks`.
+3. Register new IPC channels in main.js and preload.js.
+4. hookStore.js + useHooks.js (React state, migrating the simple `on_file_save` 
+   logic from Phase 2A [cite: 223] into this unified store).
+5. HookEditor.jsx and HookCard.jsx (UI construction).
+6. HooksPanel.jsx (Assemble layout).
+7. Handle `hook:external-trigger` in the renderer: trigger the associated 
+   automation and wait for completion, then send `hook:resolve-trigger`.
+8. connectionRegistry.js — flip to 'available'[cite: 278].
+9. End-to-end test:
+   - Create a Hook: WHEN "Pre-Commit", THEN Run Agent Prompt: "Review staged files".
+   - Make a change in the editor.
+   - Open standard external terminal and run `git commit -m "test"`.
+   - Verify standard terminal hangs.
+   - Verify NexCode pops up showing the Agent analyzing the files.
+   - If Agent approves, terminal completes the commit.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-7) codebase.
+2. The Git Hook Bash Script must be robust. If the NexCode local server is 
+   offline (app closed), it MUST fail open (`exit 0`) so it doesn't lock the 
+   user out of git commits.
+3. Ensure the local port is dynamic to prevent `EADDRINUSE` errors if multiple 
+   instances are somehow open or another app uses the port. Write the active 
+   port to `.nexcode-port` in the project root or `.git/` folder when the project 
+   is opened, and clean it up on close.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 8 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART9_BUILD_INSTRUCTIONS.txt (Agent Environment 
+Selector, Terminal Shell Selector, Popout Window)
+================================================================================

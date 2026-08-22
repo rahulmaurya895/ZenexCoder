@@ -1,0 +1,207 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 6 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART5_BUILD_INSTRUCTIONS.txt
+   THEME: "BROWSER INTEGRATION" — Agent Web Browsing Capability + UI Panel
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Parts 1-5 built: Connections Hub, Git Core, Worktrees, Environments, and 
+MCP Servers (Registry + Execution).
+Part 6 SCOPE (build now):
+  1. Browser Engine Setup — Integrate Playwright (or Puppeteer) to run a 
+     managed Chromium instance in the background.
+  2. Agent Browser Tools — Expose specific tools to the LLM (`browser_navigate`, 
+     `browser_click`, `browser_type`, `browser_read_page`).
+  3. Browser UI Panel — A built-in panel to let the user visually monitor 
+     exactly what the AI is seeing and doing in the browser (URL bar, live 
+     screenshot/DOM preview).
+  4. Permissions Gating — Route browser actions through Phase 2A's approval 
+     system.
+  5. Connections Hub Wiring — Flip the 'browser' card to 'available'.
+
+DO NOT implement: Computer use (desktop control), Hooks, Agent env, 
+terminal shell selector, popout window, dictation, or notifications. 
+Those are Parts 7-10.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 6 ONLY)
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   └── browser/
+│       ├── BrowserPanel.jsx          (Full panel: URL bar, viewport, controls)
+│       ├── BrowserToolbar.jsx        (Back, Forward, Reload, URL input)
+│       └── BrowserViewport.jsx       (Renders the live screenshot stream or 
+│                                       iframe of the active Playwright page)
+│
+├── store/
+│   └── browserStore.js               (Current URL, page title, loading state, 
+│                                       active browser session flag)
+│
+└── hooks/
+    └── useBrowser.js                 (Wraps browserHandler IPC calls, handles 
+                                        live viewport updates)
+
+electron/handlers/
+└── browserHandler.js                 (Manages Playwright browser instance, 
+                                        handles navigation, DOM extraction, 
+                                        and taking viewport screenshots)
+
+================================================================================
+SECTION 2: BROWSER ENGINE & AGENT TOOLS
+================================================================================
+
+Goal: The AI needs to search documentation, read GitHub issues, or debug 
+web apps visually. We use Playwright to drive this.
+
+2.1 Install Dependencies
+  Add to package.json: `npm install playwright`
+
+2.2 browserHandler.js (electron/handlers/)
+  Maintain a singleton Playwright browser instance.
+  IPC-exposed functions:
+    - browserStart() -> Launches Chromium.
+    - browserStop() -> Closes browser.
+    - browserNavigate(url) -> Goto URL, wait for 'domcontentloaded'.
+    - browserClick(selector) -> Playwright `.click(selector)`.
+    - browserType(selector, text) -> Playwright `.fill(selector, text)`.
+    - browserGetDOM() -> Returns an accessibility tree or simplified Markdown 
+      representation of the DOM (easier for LLMs to read than raw HTML).
+    - browserGetScreenshot() -> Returns base64 image of the viewport.
+
+2.3 AI Service Injection (openaiService.js / anthropicService.js)
+  Add these built-in tools to the LLM payload (similar to MCP tools in Part 5):
+    - `browser_navigate`: { url: string }
+    - `browser_click`: { element_id_or_selector: string }
+    - `browser_type`: { element_id_or_selector: string, text: string }
+    - `browser_read_page`: {} -> Returns the markdown-simplified DOM.
+
+  Update the System Prompt:
+  "You have access to a web browser. Use 'browser_navigate' to open URLs, 
+   'browser_read_page' to understand the layout, and 'browser_click'/'browser_type' 
+   to interact. Always read the page before interacting."
+
+================================================================================
+SECTION 3: THE BROWSER UI PANEL
+================================================================================
+
+Goal: The user must see what the AI is doing. Blind web browsing is a security risk.
+
+3.1 BrowserPanel.jsx (Connections Hub slide-over or Sidebar tab)
+  Layout:
+    - Top: BrowserToolbar.jsx
+    - Main: BrowserViewport.jsx
+  
+3.2 BrowserToolbar.jsx
+  - Back, Forward, Reload buttons (wired to IPC).
+  - Address Bar (read-only when AI is controlling, but user can type to 
+    manually navigate).
+  - "Close Session" button (Error red outline) to forcefully kill the 
+    Playwright instance.
+
+3.3 BrowserViewport.jsx
+  - Since embedding Playwright directly into a React UI is complex, use the 
+    Screenshot Streaming approach (industry standard for agent UIs):
+    Whenever the DOM changes or the agent takes an action, `browserHandler` 
+    emits a base64 screenshot via IPC 'browser:frame-update'.
+  - Render an `<img src="data:image/jpeg;base64,..." />` that fills the viewport.
+  - Show a loading spinner overlay when `browserStore.isLoading === true`.
+
+================================================================================
+SECTION 4: PERMISSIONS GATING (PHASE 2A TIE-IN)
+================================================================================
+
+Goal: Web browsing can trigger side effects (submitting forms, deleting data).
+
+4.1 approvalRules.js (Phase 2A) — EXTEND
+  Add new rules:
+  - actionType: 'browser_read' (Includes `Maps`, `read_page`)
+    riskLevel: 'low' (Executes automatically, no prompt).
+  - actionType: 'browser_interact' (Includes `click`, `type`, `submit`)
+    riskLevel: 'medium' (Follows permission mode. Ask in "Default", auto-run 
+    in "Auto-review").
+
+4.2 agentHandler.js / useAgentRun.js — EXECUTION
+  When the agent requests `browser_click`:
+  1. Trigger ApprovalRequest card.
+  2. Text: "AI wants to click on [selector] at [Current URL]".
+  3. Include the latest viewport screenshot in the Approval card so the user 
+     can visually verify what the AI is about to click.
+  4. On Approve -> call `browserHandler.browserClick()`.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 6)
+================================================================================
+
+  'browser:start'          renderer -> main
+  'browser:stop'           renderer -> main
+  'browser:navigate'       renderer -> main  ({ url })
+  'browser:click'          renderer -> main  ({ selector })
+  'browser:type'           renderer -> main  ({ selector, text })
+  'browser:get-dom'        renderer -> main  () -> Returns simplified DOM string
+  'browser:nav-changed'    main -> renderer  ({ url, title, isLoading })
+  'browser:frame-update'   main -> renderer  ({ base64Image })
+
+================================================================================
+SECTION 6: CONNECTIONS HUB WIRING (PART 6)
+================================================================================
+
+Flip the 'browser' entry in connectionRegistry.js from 'coming_soon' 
+to 'available':
+  {
+    id: 'browser',
+    name: 'Browser Integration',
+    description: 'Allow the AI to browse the web, read docs, and test UIs',
+    icon: 'Globe',
+    status: 'available',
+    settingsRoute: BrowserPanel
+  }
+
+Ensure the ConnectionCard "Configure" button opens the BrowserPanel.
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 6)
+================================================================================
+
+1. Add `playwright` to package.json and run `npm install`.
+2. browserHandler.js (electron) — Setup Playwright launch, navigation, and 
+   the continuous screenshot emitter (`frame-update`).
+3. Register new IPC channels in main.js and preload.js.
+4. browserStore.js + useBrowser.js (React state).
+5. BrowserToolbar.jsx and BrowserViewport.jsx (UI construction).
+6. BrowserPanel.jsx (Assemble layout).
+7. approvalRules.js — Add `browser_read` and `browser_interact`.
+8. openaiService.js / anthropicService.js — Inject browser tools into LLM.
+9. connectionRegistry.js — flip to 'available'.
+10. End-to-end test:
+   - Ask AI: "Go to github.com and tell me the trending repositories."
+   - Verify Playwright starts in background.
+   - Verify BrowserPanel shows the live GitHub screenshot.
+   - Verify the AI uses `browser_navigate`, then `browser_read_page`.
+   - Verify the AI returns the correct answer in the Chat Panel.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-5) codebase.
+2. DOM Simplification is CRITICAL. Do not pass raw HTML to the LLM (it will 
+   blow up the context window). In `browserGetDOM()`, extract only visible text, 
+   inputs, buttons, and links. Map them to a clean format: 
+   `[Button: Submit] (id: submit-btn)`.
+3. Ensure Playwright processes are forcefully killed when the Electron app 
+   quits. Orphaned Chromium instances will consume severe RAM.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 6 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART7_BUILD_INSTRUCTIONS.txt (Computer Use)
+================================================================================

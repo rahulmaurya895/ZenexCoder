@@ -1,0 +1,226 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 2 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "GLOBAL SEMANTIC KNOWLEDGE GRAPH" (RAG on Steroids)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 3 Part 1 built the Swarm Engine (Architect -> Coder -> SecOps). 
+Phase 3 SCOPE (build now):
+  1. Embedded Vector Database — Integrate `vectordb` (LanceDB Node SDK) directly 
+     into the Electron main process for ultra-fast, local, serverless vector storage.
+  2. Local Embeddings — Use Ollama's `/api/embeddings` endpoint with a lightweight 
+     model (e.g., `nomic-embed-text`) to convert text/code to vectors locally without 
+     API costs or privacy leaks.
+  3. Background Indexer — A crawler that chunks and embeds your local codebase, 
+     git history, and (crucially) queries connected MCP servers (Slack, Jira, Notion) 
+     to map external organizational knowledge.
+  4. RAG Injection Engine — Intercept the user's prompt BEFORE handing it to the 
+     Swarm Architect, query the Vector DB, and inject highly relevant code snippets 
+     and external tickets into the context window.
+  5. Semantic Search UI — A panel for the user to visually manage the Knowledge 
+     Graph and perform semantic searches.
+
+DO NOT implement: Speculative Execution, Self-Healing, Hardware Clustering, 
+or Realtime Audio. Those are Parts 3-6.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS A SEMANTIC KNOWLEDGE GRAPH?
+Standard search is "Lexical" (Ctrl+F). If you search "auth", it only finds the 
+exact word "auth". 
+Semantic search understands meaning. If you ask the AI, "Where do we handle 
+user login failures?", the Vector Database mathematically calculates the "distance" 
+between your question and the code, returning the `rateLimiter.js` file even if 
+the word "login" isn't strictly in that file.
+
+WHY "ON STEROIDS"?
+Because we aren't just indexing code. Since we built the MCP Server integration 
+in Phase 2B, we can ask the Slack MCP server: "Give me the last 50 messages in 
+the #dev channel." We embed those messages. Now, if you type: 
+"Fix the database timeout bug Sarah found," the AI searches its Vector DB, 
+finds Sarah's Slack message containing the stack trace, finds the exact 
+database connection file in your codebase, and sends BOTH to the Swarm Architect 
+before writing a single line of code. It feels like magic.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 2)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   └── knowledge/
+│       ├── KnowledgePanel.jsx        (Sidebar tab: Status of Vector DB index)
+│       ├── SemanticSearchBox.jsx     (UI to manually search the Vector DB)
+│       └── SyncStatusWidget.jsx      (Small progress bar in TopBar showing 
+│                                       background embedding progress)
+│
+├── store/
+│   └── knowledgeStore.js             (Tracks indexing progress, total vectors, 
+│                                       and search results)
+│
+└── utils/
+    └── textSplitter.js               (Utility to chunk code into 500-token blocks 
+                                        with 50-token overlaps)
+
+electron/handlers/
+├── vectorDbHandler.js                (Initializes LanceDB, handles vector schemas)
+├── embedderHandler.js                (Calls Ollama API to convert text to vectors)
+└── indexerDaemon.js                  (Background worker that reads files/MCP data, 
+                                        chunks them, gets embeddings, saves to DB)
+
+================================================================================
+SECTION 2: EMBEDDED VECTOR DATABASE & EMBEDDER
+================================================================================
+
+Goal: A robust, local storage mechanism for mathematical arrays (vectors).
+
+2.1 Install Dependencies
+  Add to package.json: `npm install vectordb` (LanceDB SDK - runs natively).
+
+2.2 embedderHandler.js (electron/handlers/)
+  - We need a local embedding model. Require the user to pull `nomic-embed-text` 
+    via the Phase 1 Ollama Manager. (Size: ~270MB. Extremely fast).
+  - Function: `generateEmbedding(text)` -> POST to `http://localhost:11434/api/embeddings`
+  - Returns an array of floats (e.g., length 768 or 1024 depending on model).
+
+2.3 vectorDbHandler.js (electron/handlers/)
+  - Initialize LanceDB in the user's `.nexcode_data/vector_db/` directory.
+  - Create two primary tables (collections):
+    1. `code_chunks`: 
+       Schema: { id, project_path, file_path, content, vector, last_modified }
+    2. `external_memory`: 
+       Schema: { id, source (e.g., 'slack', 'jira'), url, content, vector, timestamp }
+
+================================================================================
+SECTION 3: BACKGROUND INDEXER (THE CRAWLER)
+================================================================================
+
+Goal: Keep the Vector DB up to date without freezing the UI.
+
+3.1 indexerDaemon.js (electron/handlers/)
+  - Listen for the `projectOpened` event (Phase 1 / Phase 2B).
+  - Run a delta sync:
+    1. Scan the project directory. Ignore `.git`, `node_modules`, and files in `.gitignore`.
+    2. Compare file `last_modified` timestamps with the DB.
+    3. If new/changed: Read file -> Send to `textSplitter.js` -> Get array of chunks.
+    4. Batch process embeddings (e.g., 10 chunks at a time).
+    5. Upsert into LanceDB.
+  
+3.2 MCP Data Ingestion
+  - If MCP Servers (Phase 2B) are connected, and the user has toggled "Index External 
+    Data" in the KnowledgePanel:
+    1. Query the MCP server's exposed tools (e.g., `github_list_issues`, `slack_read_channel`).
+    2. Fetch the text data.
+    3. Chunk, embed, and store in the `external_memory` table.
+
+3.3 CPU/RAM Management
+  - Embedding is intensive. The indexer must yield to the event loop. Pause 
+    indexing if the LLM is actively generating code for the Swarm to prevent 
+    hardware lockup on 8GB machines.
+
+================================================================================
+SECTION 4: RAG INJECTION ENGINE (AGENT INTEGRATION)
+================================================================================
+
+Goal: Feed the Swarm the exact context it needs before it starts thinking.
+
+4.1 swarmHandler.js (Phase 3 Part 1 EXTENSION)
+  - Intercept the `USER` prompt before passing it to the `ARCHITECT`.
+  - Step 1: Embed the user's prompt via `embedderHandler.js`.
+  - Step 2: Query LanceDB `code_chunks` table for the top `K=5` closest vectors 
+    using cosine similarity or L2 distance.
+  - Step 3: Query LanceDB `external_memory` for the top `K=3` closest vectors.
+  - Step 4: Inject this data into the Architect's System Prompt dynamically:
+  
+  User Request: {User Prompt}
+
+  --- AUTOMATIC CONTEXT RETRIEVAL (RAG) ---
+  The following code snippets and external memory might be relevant:
+  <CodeSnippet file="src/api/auth.js">
+    {content}
+  </CodeSnippet>
+  <ExternalMemory source="slack_mcp">
+    [Sarah]: Hey, the login route in src/api/auth.js throws a 500 timeout error.
+  </ExternalMemory>
+  -----------------------------------------
+  Based on this context and the user request, draft your architectural plan.
+
+================================================================================
+SECTION 5: THE KNOWLEDGE GRAPH UI PANEL
+================================================================================
+
+Goal: Transparency. The user should know exactly what the AI has indexed.
+
+5.1 KnowledgePanel.jsx (Connections Hub slide-over or Sidebar tab)
+  - Section 1: "Local Codebase Sync".
+    - Shows total files indexed, total vectors generated.
+    - "Re-index Full Project" button.
+  - Section 2: "External Memory (MCP)".
+    - Lists active MCP connections and their sync status (e.g., "Slack: Last synced 10m ago").
+    - Toggle: "Auto-sync every hour".
+
+5.2 SyncStatusWidget.jsx
+  - A tiny, unobtrusive circular progress indicator in the TopBar (near TokenMeter).
+  - Shows background embedding status: "Indexing 45/120 files..."
+  - Disappears when 100% complete.
+
+5.3 SemanticSearchBox.jsx
+  - A search bar inside the KnowledgePanel.
+  - User can type: "Where do we process payments?"
+  - Bypasses the Swarm, directly hits the Vector DB, and returns a visual list 
+    of file paths and text snippets matching the semantic intent, proving to the 
+    user that the Vector DB works.
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 2)
+================================================================================
+
+  'vector:sync-start'       renderer -> main  // Manual trigger
+  'vector:sync-progress'    main -> renderer  ({ current, total, status })
+  'vector:search'           renderer -> main  ({ queryText, limit }) -> Array<Results>
+  'vector:stats'            renderer -> main  () -> { codeVectors, externalVectors }
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. Check and add `vectordb` to package.json.
+2. vectorDbHandler.js (electron) — Initialize LanceDB and define the schemas.
+3. embedderHandler.js — Write the Ollama API fetch logic for `nomic-embed-text`.
+4. textSplitter.js — Implement a recursive character splitter for chunking source code.
+5. indexerDaemon.js — Write the crawler. Wire it to start when a project opens.
+6. Register new IPC channels in main.js and preload.js.
+7. knowledgeStore.js — Create the Zustand store for sync progress and stats.
+8. KnowledgePanel.jsx, SemanticSearchBox.jsx, SyncStatusWidget.jsx (UI construction).
+9. swarmHandler.js — Modify the Swarm Engine to perform the RAG lookup and context injection.
+10. End-to-end test:
+    - Open a project with 5 JS files.
+    - Verify SyncStatusWidget shows indexing progress.
+    - Use SemanticSearchBox to search for a concept (not an exact keyword) and verify 
+      it returns the correct file snippet.
+    - Ask the Swarm a question relying on context from a deeply buried file.
+    - Verify the Architect's response proves it read the RAG-injected context.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1, 2, and 3 (Part 1) codebase.
+2. PERFORMANCE IS CRITICAL. Node.js is single-threaded. Ensure file reading, 
+   chunking, and especially the API calls to Ollama are asynchronous and do not 
+   block the main IPC thread, otherwise the Electron UI will freeze.
+3. Keep the `K` value for retrieval conservative (e.g., K=5 or 8). If you inject 
+   too many chunks into the Swarm context, you will blow up the token limit of 
+   the active coding LLM.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+================================================================================
+END OF PHASE 3 — PART 2 OF 6
+================================================================================

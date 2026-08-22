@@ -1,0 +1,154 @@
+================================================================================
+   NEXCODE — PHASE 4 (PART 2 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "COLLABORATIVE INTELLIGENCE" (Shared Knowledge & Encrypted Sync)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 4 Part 1 built the "Self-Learning Engine" (Failure Pattern Analysis).
+Phase 4 SCOPE (build now):
+  1. Peer-to-Peer Sync Engine — Allow NexCode instances on different machines 
+     (in the same office/network) to discover each other and share "Learned Rules".
+  2. Encrypted Knowledge Vault — A shared repository of "Anti-Patterns" and "Project 
+     Context" that is end-to-end encrypted (E2EE) so even if it syncs via a relay 
+     server, nobody (including the relay) can read it.
+  3. Shared Context Protocol (SCP) — Define a lightweight JSON schema for sharing 
+     AI-learned lessons between team members.
+  4. Collaborative Presence UI — See which of your teammates are "Active" and 
+     what files they are currently working on in real-time.
+
+DO NOT implement: CI/CD Autopilot or Synthetic QA. Those are Parts 3-5.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS COLLABORATIVE INTELLIGENCE?
+In Phase 4 Part 1, you taught the AI to learn from its own mistakes. But what 
+if you work in a team of 5 people? If Dev A fixes a bug, Dev B shouldn't have 
+to hit the same bug again. 
+
+Collaborative Intelligence is "Collective Learning". Your NexCode instance will 
+silently talk to your teammate's NexCode instance. If the AI learns that 
+"Always use `bcrypt` instead of `md5`" in this project, it will push that 
+"Learned Rule" to the team vault. Dev B's NexCode will automatically pull 
+this rule, and the AI will suggest the better fix to Dev B instantly. 
+
+We use End-to-End Encryption (E2EE). The "Shared Knowledge" is encrypted 
+with a project-specific key. NexCode acts as a decentralized brain for the team.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 2)
+================================================================================
+
+src/
+├── components/
+│   └── collaboration/
+│       ├── TeamDashboard.jsx         (Visual list of active team members)
+│       ├── SharedRuleTable.jsx       (Table of rules synced from teammates)
+│       └── E2EEStatus.jsx            (Security badge: "E2EE Sync Active")
+│
+├── store/
+│   └── collaborationStore.js         (List of peers, shared rules, sync status)
+│
+└── utils/
+    └── encryption.js                 (AES-256 GCM logic for the Knowledge Vault)
+
+electron/handlers/
+├── p2pSyncHandler.js                 (Handles the P2P discovery & handshake)
+└── vaultHandler.js                   (Handles encrypted read/write of shared rules)
+
+================================================================================
+SECTION 2: ENCRYPTED KNOWLEDGE VAULT
+================================================================================
+
+Goal: Store the learned rules in a format that can be synced securely.
+
+2.1 encryption.js (src/utils/)
+  - Use Web Crypto API or `crypto` module.
+  - Key derivation: PBKDF2 with salt from the project config.
+  - Every exported "Learned Rule" must be encrypted before leaving the machine.
+
+2.2 vaultHandler.js (electron/handlers/)
+  - Store shared rules in `.nexcode/shared_knowledge.enc`.
+  - When a new rule is learned (Phase 4 Part 1), encrypt it and place it in 
+    the sync queue.
+
+================================================================================
+SECTION 3: P2P SYNC ENGINE
+================================================================================
+
+Goal: Sync the vault between team members.
+
+3.1 p2pSyncHandler.js (electron/handlers/)
+  - Leverage the LAN discovery built in Phase 3 Part 5 (Hardware Clustering).
+  - Use the existing WebSocket backbone to push "New Rule" events to peers.
+  - Sync Algorithm:
+    1. Node A (has new rule) broadcasts "Update Available" event.
+    2. Node B requests the update.
+    3. Node A sends encrypted payload.
+    4. Node B decrypts and merges into its `learned_rules` SQLite table.
+
+================================================================================
+SECTION 4: COLLABORATIVE PRESENCE UI
+================================================================================
+
+Goal: Avoid "Merge Hell" by seeing who is touching what.
+
+4.1 TeamDashboard.jsx
+  - Shows teammates' avatars (pulled from Git config).
+  - Indicator: "Active in `auth.js`" (updates via IPC heartbeat).
+  - Status: "Idle" / "Coding" / "Debug Mode".
+
+4.2 SharedRuleTable.jsx
+  - Lists rules, but distinguishes between `Local Rules` (you learned) 
+    and `Shared Rules` (teammate learned).
+  - Allows "Mute Teammate" (stop accepting AI lessons from a specific person 
+    if they have bad coding habits).
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PHASE 4 - PART 2)
+================================================================================
+
+  'collab:connect'          renderer -> main  // Join team sync
+  'collab:peers-updated'    main -> renderer  ({ peers })
+  'collab:rule-synced'      main -> renderer  ({ rule, origin })
+  'collab:presence-update'  main -> renderer  ({ userId, file, status })
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER
+================================================================================
+
+1. encryption.js — Implement AES-256 encryption.
+2. vaultHandler.js — Logic to encrypt/decrypt rule files.
+3. p2pSyncHandler.js — Implement the event loop for syncing rule payloads.
+4. collaborationStore.js — Manage the "Peer List" and "Incoming Rules" queue.
+5. TeamDashboard.jsx + SharedRuleTable.jsx — UI construction.
+6. swarmHandler.js (Phase 3 Part 1 extension) — Update the Swarm Architect to 
+   check the "Shared Rules" table before drafting plans.
+7. End-to-end test:
+   - Run NexCode on Machine A and Machine B.
+   - Pair them (PIN auth).
+   - Create a rule on Machine A (force it by triggering a fake error/fix).
+   - Verify Machine B automatically receives the rule and shows "E2EE Sync Active".
+   - Verify Machine B's Swarm Architect considers the new rule.
+
+================================================================================
+SECTION 7: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Security: The decryption key MUST never be logged to the console or stored 
+   in plain text. Use the Electron `safeStorage` (Phase 1) to protect the 
+   Session Encryption Key.
+2. Conflict Resolution: If two people learn conflicting rules for the same 
+   trigger, the "Most Recent Rule" wins, but show a warning in the UI: 
+   "Conflict detected in team knowledge base."
+3. Keep the sync lightweight. Do not sync the entire database; only sync 
+   the JSON delta of new learned rules.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 4 — PART 2 OF 5
+================================================================================

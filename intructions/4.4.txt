@@ -1,0 +1,146 @@
+================================================================================
+   NEXCODE — PHASE 4 (PART 4 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "SYNTHETIC QA" (Agents as End-Users)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 4 Parts 1-3 built the Self-Learning, Collaboration, and CI/CD Pipeline.
+Phase 4 SCOPE (build now):
+  1. Headless Browser Agent — Integrate Playwright/Puppeteer to spin up 
+     headless browsers in the background.
+  2. "User Persona" Scenarios — Define AI agents with specific behaviors (e.g., 
+     "The Power User" who clicks everything, "The Slow User" who types rarely).
+  3. UI Regression Loop — Agents traverse your app, compare current UI screenshots 
+     with baseline snapshots, and flag visual regressions.
+  4. Flaky Test Auto-Repair — If an agent fails to click a button because the CSS 
+     selector changed, the agent uses its "Self-Healing" (Phase 3) logic to 
+     find the new selector and update the test script automatically.
+
+DO NOT implement: Enterprise Governance. That is Part 5.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS SYNTHETIC QA?
+Usually, developers write "Unit Tests" (checking if a function returns 5 when 
+you add 2+3). But bugs often happen at the "User Level" (e.g., button is 
+hidden behind a popup).
+
+Synthetic QA = "Robot Users".
+Hum background mein headless browser (bina UI wala chrome) chalayenge. Yeh agent 
+tumhari website par jayega, login karega, form bharega, aur check karega ki 
+sab sahi se ho raha hai ya nahi. Agar "Checkout" button nahi dikha, toh agent 
+turant report karega: "UI Regression detected: Checkout button missing."
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 4)
+================================================================================
+
+src/
+├── components/
+│   └── qa/
+│       ├── ScenarioBuilder.jsx       (Define user paths: "Login -> Buy -> Logout")
+│       └── TestReportPanel.jsx       (Visual dashboard of passed/failed agent runs)
+│
+├── store/
+│   └── qaStore.js                    (Test results, agent activity logs)
+│
+└── utils/
+    └── scenarioParser.js             (Converts plain text instructions to test steps)
+
+electron/handlers/
+├── syntheticAgent.js                 (Orchestrates Playwright/Puppeteer)
+└── visualDiffEngine.js               (Screenshot comparison logic)
+
+================================================================================
+SECTION 2: HEADLESS BROWSER ORCHESTRATOR
+================================================================================
+
+Goal: Control browser agents from the backend.
+
+2.1 syntheticAgent.js (electron/handlers/)
+  - Initialize Playwright.
+  - Expose IPC: `qa:run-scenario`.
+  - Scenario format:
+    ```json
+    [
+      { "action": "navigate", "url": "https://localhost:3000" },
+      { "action": "click", "selector": "#login-btn" },
+      { "action": "type", "selector": "#email", "value": "test@user.com" }
+    ]
+    ```
+
+================================================================================
+SECTION 3: VISUAL REGRESSION ENGINE
+================================================================================
+
+Goal: Catch UI changes that look broken to a human.
+
+3.1 visualDiffEngine.js (electron/handlers/)
+  - During test execution, take screenshots of critical pages.
+  - Store "Golden Snapshot" (the expected look) in `tests/visual/`.
+  - Compare new screenshot vs Golden Snapshot using pixel-matching (e.g., `pixelmatch` library).
+  - If mismatch > 5%, mark as "Visual Regression".
+
+================================================================================
+SECTION 4: FLAKY TEST AUTO-REPAIR
+================================================================================
+
+Goal: Agents that fix their own tests.
+
+4.1 Self-Healing Integration
+  - If Playwright throws `ElementNotFoundException`:
+    1. Send DOM snapshot to the Swarm (Phase 3 Part 1).
+    2. Prompt: "Selector for #submit-btn is invalid. Given this DOM tree, what is the new selector?"
+    3. Update test script dynamically.
+
+================================================================================
+SECTION 5: QA DASHBOARD UI
+================================================================================
+
+5.1 ScenarioBuilder.jsx
+  - Simple interface to chain actions: "Navigate" -> "Click" -> "Verify".
+  - Toggle "Persona": "Normal User" vs "Chaos Monkey" (Random clicking to try and break the app).
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 4 - PART 4)
+================================================================================
+
+  'qa:run-scenario'         renderer -> main  ({ steps })
+  'qa:stream-logs'          main -> renderer  ({ message })
+  'qa:screenshot-capture'   main -> renderer  ({ imageUrl })
+  'qa:result-final'         main -> renderer  ({ success, diffImage })
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. Install `playwright` and `pixelmatch`.
+2. syntheticAgent.js — Set up the headless browser lifecycle.
+3. visualDiffEngine.js — Implement the screenshot comparison utility.
+4. scenarioParser.js — Write the mapping logic for JSON steps.
+5. QaStore + UI Components.
+6. End-to-end test:
+   - Create a simple scenario: "Visit my local app -> Check if H1 exists".
+   - Run the agent. Verify it launches, navigates, and reports success.
+   - Intentionally break the H1 ID. Verify the agent fails and highlights the error.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Performance: Headless browsers are memory-heavy. Limit to 1 active agent 
+   at a time on 8GB RAM machines.
+2. Stability: Always use `page.waitForSelector()` to avoid race conditions. 
+   Do not hardcode `wait(1000)` timeouts—they make tests flaky.
+3. Isolation: These tests must NOT run against real Production environments 
+   without explicit user permission. Default to `localhost` or `staging`.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 4 — PART 4 OF 5
+================================================================================

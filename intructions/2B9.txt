@@ -1,0 +1,193 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 9 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt
+   THEME: "AGENT ENVIRONMENT, SHELL SELECTOR & POPOUT WINDOW"
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Parts 1-8 built: Connections Hub, Git Core, Environments, MCP Servers, 
+Browser Integration, Computer Use, and Hooks System.
+Part 9 SCOPE (build now):
+  1. Agent Environment Selector — Allow the AI agent to execute its terminal 
+     commands inside an isolated Windows Sandbox (.wsb) instead of the host OS.
+  2. Terminal Shell Selector — Let the user choose between PowerShell, CMD, 
+     Git Bash, zsh, or bash for the integrated terminal.
+  3. Popout Window & Global Hotkey — Detach the Chat/Review panel into a 
+     floating, transparent-capable Electron window summoned via a global 
+     shortcut (e.g., Alt+Space) from anywhere on the OS.
+  4. Connections Hub Wiring — Flip 'agent_environment', 'terminal_shell', 
+     and 'popout_window' cards to 'available'.
+
+DO NOT implement: Dictation or Notification Center. Those are in the final Part 10.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 9 ONLY)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   ├── environment/
+│   │   └── AgentEnvPanel.jsx         (Settings for Windows Sandbox isolation)
+│   ├── terminal/
+│   │   └── ShellSelector.jsx         (Dropdown to select active shell executable)
+│   └── layout/
+│       └── PopoutContainer.jsx       (Root component for the detached window)
+│
+├── store/
+│   ├── envIsolationStore.js          (Tracks if agent runs in host vs sandbox)
+│   └── windowStore.js                (Tracks popout window state/visibility)
+│
+└── hooks/
+    └── usePopout.js                  (Handles IPC sync between main window 
+                                        and popout window)
+
+electron/
+├── windows/
+│   └── popoutWindow.js               (Creates the frameless, floating BrowserWindow)
+└── handlers/
+    ├── sandboxHandler.js             (Generates .wsb files and manages Sandbox VM)
+    └── terminalHandler.js            (EXTEND: Use selected shell, route commands 
+                                        to sandbox if enabled)
+
+================================================================================
+SECTION 2: AGENT ENVIRONMENT (WINDOWS NATIVE SANDBOX)
+================================================================================
+
+Goal: AI agents running `rm -rf` or executing untrusted code should do so in an 
+ephemeral environment. We will use Windows Sandbox (built into Windows 10/11 Pro).
+
+2.1 sandboxHandler.js (electron/handlers/)
+  - IPC function: `sandboxStart(projectPath)`
+    - Generates a dynamic `.wsb` (Windows Sandbox configuration) XML file.
+    - Uses `<MappedFolders>` to mount the current `projectPath` into the Sandbox 
+      as Read/Write.
+    - Uses `<LogonCommand>` to inject a small NexCode listener script into the 
+      Sandbox so the main app can send terminal commands into the VM.
+    - Spawns the Sandbox using `child_process.exec('start "" "nexcode_temp.wsb"')`.
+  - IPC function: `sandboxStop()`
+    - Kills the sandbox process.
+
+2.2 Agent Execution Routing (agentHandler.js EXTENSION)
+  - Before executing a step of type `terminal_run`, check `envIsolationStore`.
+  - If `isolation === 'windows_sandbox'`, route the command to the Sandbox 
+    listener instead of the local `node-pty` instance.
+  - If `isolation === 'host'`, run normally.
+
+2.3 AgentEnvPanel.jsx
+  - UI Toggle: "Run Agent in Isolated Sandbox".
+  - Warning note: "Requires Windows 10/11 Pro/Enterprise with Windows Sandbox 
+    feature enabled. The agent will mount your project folder but cannot harm 
+    your host OS."
+
+================================================================================
+SECTION 3: TERMINAL SHELL SELECTOR
+================================================================================
+
+Goal: Users need control over the underlying shell used by `node-pty`.
+
+3.1 terminalHandler.js (Phase 1 EXTENSION)
+  - Currently hardcoded to `bash` or `powershell`.
+  - Add IPC: `terminalSetShell(shellPath)`
+  - Provide a utility `detectAvailableShells()`:
+    - Windows: `powershell.exe`, `cmd.exe`, `C:\Program Files\Git\bin\bash.exe`, `pwsh.exe`
+    - Mac/Linux: `/bin/zsh`, `/bin/bash`
+  - Update the `node-pty` spawn logic to use the configured shell path.
+
+3.2 ShellSelector.jsx
+  - Placed in the Terminal Panel header (Phase 1).
+  - A dropdown listing detected shells + "Custom Path...".
+  - On change, gracefully kill the current `node-pty` instance and respawn 
+    it with the new shell, retaining the working directory.
+
+================================================================================
+SECTION 4: POPOUT WINDOW & GLOBAL HOTKEY
+================================================================================
+
+Goal: Allow the user to press Alt+Space anywhere on their computer to summon 
+the NexCode Chat/Agent interface without switching virtual desktops.
+
+4.1 popoutWindow.js (electron/windows/)
+  - Create a new `BrowserWindow`:
+    - `frame: false`, `transparent: true`, `alwaysOnTop: true`, `skipTaskbar: true`.
+    - Dimensions: 400x600.
+  - Load the same Vite dev server URL or local HTML, but append a route query: 
+    `?window=popout`.
+
+4.2 Global Shortcut (main.js EXTENSION)
+  - Use `globalShortcut.register('Alt+Space', () => { ... })`.
+  - If popout is hidden, show and focus it at the cursor's current display location.
+  - If popout is visible, hide it.
+
+4.3 State Synchronization
+  - The Popout Window needs to share `chatStore`, `agentStore`, and `appStore` 
+    with the Main Window.
+  - Use IPC to broadcast Zustand state changes:
+    - Main Window emits `store:sync` -> Main Process -> Popout Window.
+    - Popout Window emits actions -> Main Process -> Main Window executes them.
+  - PopoutContainer.jsx replaces the standard App layout when `?window=popout` 
+    is detected. It renders ONLY the `ChatPanel` and `FollowUpBar`.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 9)
+================================================================================
+
+  'sandbox:start'          renderer -> main  ({ projectPath })
+  'sandbox:stop'           renderer -> main
+  'terminal:get-shells'    renderer -> main  () -> string[]
+  'terminal:set-shell'     renderer -> main  ({ shellPath })
+  'window:toggle-popout'   renderer -> main
+  'store:broadcast'        renderer -> main -> renderer (Zustand syncing)
+
+================================================================================
+SECTION 6: CONNECTIONS HUB WIRING (PART 9)
+================================================================================
+
+Flip the following entries in connectionRegistry.js to 'available':
+  1. `agent_environment` -> Routes to AgentEnvPanel
+  2. `terminal_shell` -> Routes to Terminal Settings/ShellSelector
+  3. `popout_window` -> Routes to a simple settings panel to configure the 
+     hotkey (e.g., change Alt+Space to Ctrl+Space).
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 9)
+================================================================================
+
+1. sandboxHandler.js (electron) — Implement the `.wsb` file generator and runner.
+2. terminalHandler.js — Implement `detectAvailableShells` and dynamic `node-pty` shell swapping.
+3. popoutWindow.js — Create the frameless window configuration.
+4. main.js — Register the global hotkey (`Alt+Space`) and the `store:broadcast` IPC relay.
+5. ShellSelector.jsx and AgentEnvPanel.jsx (UI construction).
+6. PopoutContainer.jsx — Create the specialized minimal layout for the detached window.
+7. connectionRegistry.js — flip the three cards to 'available'.
+8. End-to-end test:
+   - Change the terminal shell to Git Bash (if on Windows) and verify the terminal updates.
+   - Press Alt+Space to summon the Popout Window. Type a chat message.
+   - Verify the message instantly syncs to the Main Window's chat history.
+   - Press Alt+Space to hide it.
+   - Enable Windows Sandbox isolation, trigger a terminal command via the agent, 
+     and verify it executes inside the VM instead of locally.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-8) codebase.
+2. The Zustand IPC sync is critical. Do not attempt to run two separate SQLite 
+   database connections. All DB writes MUST occur in the Main Window / Main Process. 
+   The Popout Window is effectively a "dumb client" that forwards actions to the Main Window.
+3. Ensure the global shortcut is unregistered when the app quits to prevent 
+   locking up system hotkeys (`globalShortcut.unregisterAll()`).
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 9 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART10_BUILD_INSTRUCTIONS.txt (Dictation, Notification 
+Center, & Final Polish)
+================================================================================

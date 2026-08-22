@@ -1,0 +1,45 @@
+import { create } from 'zustand';
+
+export const useAppStore = create((set) => ({
+  theme: 'dark',
+  sidebarOpen: true,
+  chatPanelOpen: true,
+  fileTreeOpen: true,
+  rightPanelOpen: false,
+  devToolsVisible: true,
+  workMode: 'coding',
+  reviewMode: 'inline',
+  pendingReviewCount: 0,
+  fullAccessBannerDismissed: false,
+  activePanel: 'split',
+  activeModel: { provider: 'google', modelId: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash (Latest Flagship)' },
+  isStreaming: false,
+  streamingAbort: null,
+  lastResponseMs: null,
+  modelRamUsed: null,
+  notice: null,
+  setTheme: (theme) => set({ theme }),
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleChatPanel: () => set((state) => ({ chatPanelOpen: !state.chatPanelOpen })),
+  toggleFileTree: () => set((state) => ({ fileTreeOpen: !state.fileTreeOpen })),
+  toggleRightPanel: () => set((state) => ({ rightPanelOpen: !state.rightPanelOpen })),
+  setRightPanelOpen: (rightPanelOpen) => set({ rightPanelOpen }),
+  setDevToolsVisible: (devToolsVisible) => set({ devToolsVisible }),
+  setWorkMode: (workMode) =>
+    set((state) => ({
+      workMode,
+      devToolsVisible: workMode === 'coding',
+      fileTreeOpen: workMode === 'coding' ? true : false,
+      chatPanelOpen: true,
+      activePanel: workMode === 'everyday' ? 'chat' : state.activePanel
+    })),
+  setReviewMode: (reviewMode) => set({ reviewMode }),
+  setPendingReviewCount: (pendingReviewCount) => set({ pendingReviewCount }),
+  dismissFullAccessBanner: () => set({ fullAccessBannerDismissed: true }),
+  setActivePanel: (activePanel) => set({ activePanel }),
+  setOllamaStatus: () => {},
+  setActiveModel: (activeModel) => set({ activeModel }),
+  setStreaming: (isStreaming, streamingAbort = null) => set({ isStreaming, streamingAbort }),
+  setResponseMetric: (lastResponseMs) => set({ lastResponseMs }),
+  setNotice: (notice) => set({ notice })
+}));

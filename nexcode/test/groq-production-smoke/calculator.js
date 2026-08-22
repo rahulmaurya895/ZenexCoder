@@ -1,0 +1,1 @@
+function add(a, b) { return a + b; }; console.log(`CALC_RESULT=${add(19, 23)}`); module.exports.add = add;

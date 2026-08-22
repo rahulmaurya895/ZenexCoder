@@ -1,0 +1,149 @@
+================================================================================
+   NEXCODE — PHASE 4 (PART 5 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "ENTERPRISE GOVERNANCE & AUDITING" (Policy Enforcement)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 4 Parts 1-4 built the Self-Learning, Collaboration, CI/CD, and Synthetic QA.
+Phase 4 SCOPE (build now):
+  1. Immutable Audit Log — A tamper-proof, write-only ledger recording every 
+     action the AI agents take (Code generated, PR raised, API key accessed).
+  2. Policy Enforcement Engine (The "Bouncer") — A set of configurable rules 
+     that block AI actions if they violate security (e.g., "Block hardcoded secrets", 
+     "Block non-TLS URLs").
+  3. Compliance Scanner — Auto-audit your project for license issues (e.g., GPL 
+     code in a proprietary project) and security vulnerabilities (Snyk/OSV integration).
+  4. Governance Dashboard — A visual scorecard for the organization showing 
+     compliance and security health.
+
+DO NOT implement anything outside this scope. This completes Phase 4.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS ENTERPRISE GOVERNANCE?
+In a big company, you can't just let an AI write and deploy code without 
+oversight. You need "Guardrails". 
+- "Audit Log" is like an airplane's black box—it records everything the AI does, 
+  so if something breaks, you know exactly when the AI changed the code.
+- "Policy Engine" is the bouncer—if the AI tries to write a password in plain text 
+  in a file, the Bouncer catches it before it gets saved.
+- "Compliance Scanner" is the lawyer—it checks that your code doesn't use libraries 
+  that have legal or security risks.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 5)
+================================================================================
+
+src/
+├── components/
+│   └── governance/
+│       ├── AuditLogViewer.jsx        (Timeline of all agent actions)
+│       ├── PolicySettings.jsx        (Toggle enforcement rules)
+│       └── ComplianceReport.jsx      (Security/License scorecard)
+│
+├── store/
+│   └── governanceStore.js            (Current compliance status)
+│
+└── utils/
+    └── securityPolicies.js           (The "Rulebook" for the AI bouncer)
+
+electron/handlers/
+├── auditLogHandler.js                (The write-only ledger service)
+├── policyEnforcer.js                 (Interceptors for Swarm output)
+└── complianceScanner.js              (Integrates with OSV.dev or Snyk API)
+
+================================================================================
+SECTION 2: IMMUTABLE AUDIT LOG
+================================================================================
+
+Goal: A permanent, encrypted record of every AI action.
+
+2.1 auditLogHandler.js (electron/handlers/)
+  - Every time an agent (Swarm) proposes a change, `auditLogHandler` writes 
+    an entry to `audit.log.enc`: 
+    `{ timestamp, agent_id, action, file_path, diff, approval_status }`.
+  - Use `fs.appendFile` to ensure it's "append-only". This cannot be edited 
+    or deleted by the user without manual, high-privilege access.
+
+================================================================================
+SECTION 3: THE POLICY ENGINE (THE "BOUNCER")
+================================================================================
+
+Goal: Block dangerous actions before they happen.
+
+3.1 policyEnforcer.js (electron/handlers/)
+  - This acts as a Middleware in the Swarm loop.
+  - Before any code is committed to disk (Phase 2A Approval), pass it through 
+    the `policyEnforcer`.
+  - Rule Examples:
+    - `no_secrets`: Regex check for `API_KEY`, `PASSWORD`, etc.
+    - `no_eval`: Block use of `eval()` or `new Function()`.
+    - `no_external_ip`: Block requests to unknown public IPs.
+  - If a violation is found: ABORT the agent run and return: 
+    "Policy Violation: {RuleName}. Fix this code before approval."
+
+================================================================================
+SECTION 4: COMPLIANCE SCANNER
+================================================================================
+
+Goal: Protect the company from legal/security debt.
+
+4.1 complianceScanner.js (electron/handlers/)
+  - Periodically scan `package.json` against the OSV (Open Source Vulnerabilities) 
+    database API.
+  - Scan for licenses (MIT, Apache, GPL).
+  - Report findings to `ComplianceReport.jsx`.
+
+================================================================================
+SECTION 5: GOVERNANCE UI
+================================================================================
+
+5.1 AuditLogViewer.jsx
+  - A scrollable list of historical AI actions. 
+  - Search/Filter: "Show all changes to `auth.js` in the last 30 days."
+
+5.2 PolicySettings.jsx
+  - Toggle switches for the AI Bouncer: "Block Unsafe Code", "Warn on Secret Detection".
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 4 - PART 5)
+================================================================================
+
+  'audit:get-logs'          renderer -> main  () -> Log[]
+  'policy:get-status'       renderer -> main  () -> Status[]
+  'policy:update-setting'   renderer -> main  ({ ruleId, enabled })
+  'scan:compliance'         renderer -> main  () -> Report[]
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. auditLogHandler.js — Build the append-only ledger.
+2. policyEnforcer.js — Write the regex/AST scanners to "vet" AI code.
+3. complianceScanner.js — Integrate with OSV API.
+4. Integrate `policyEnforcer` into the Swarm Approval flow.
+5. Governance UI (Audit, Policy, Compliance).
+6. End-to-end test:
+   - Attempt to write code with a fake hardcoded secret (e.g., `let key = "12345"`).
+   - Verify the "Bouncer" blocks the approval.
+   - Run a compliance scan. Verify it correctly identifies installed packages.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Security: The Audit Log is the most sensitive part. If the system is 
+   compromised, this is the first thing an attacker will try to delete. 
+   Set OS-level file permissions on `audit.log.enc` to be read-only where possible.
+2. Performance: Do not block the Swarm loop with heavy scans. Policy checks 
+   (Regex) should take <10ms.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 4 — PART 5 OF 5
+================================================================================

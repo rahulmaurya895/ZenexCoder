@@ -1,0 +1,153 @@
+================================================================================
+   NEXCODE — PHASE 4 (PART 3 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "CI/CD AUTOPILOT" (Self-Deploying Infrastructure)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 4 Parts 1-2 built the Self-Learning Engine and Collaborative Sync.
+Phase 4 SCOPE (build now):
+  1. Infrastructure-as-Code (IaC) Generator — AI generates Terraform/Pulumi 
+     config based on your project requirements (e.g., "Deploy to AWS Lambda").
+  2. Cloud Provider Bridge — Integrate APIs (AWS/Vercel/GCP) to create resources 
+     (buckets, databases) programmatically.
+  3. Pipeline Orchestrator — A local agent that watches `git push` events, 
+     triggers a build, runs tests, and deploys to staging/prod automatically.
+  4. Auto-Rollback Engine — Monitor deployment health (logs/latency). If 
+     the new deployment errors out, the AI automatically reverts the CI/CD 
+     pipeline to the last known stable commit.
+
+DO NOT implement: Synthetic QA or Governance. Those are Parts 4-5.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS CI/CD AUTOPILOT?
+CI (Continuous Integration) = Code merging & testing.
+CD (Continuous Deployment) = Pushing to production.
+Autopilot = The AI does all this for you.
+
+Usually, you need DevOps engineers to write complex YAML files for GitHub Actions.
+With NexCode, you just say: "Deploy this Node.js app to Vercel."
+The AI generates the config files, creates the infrastructure, sets up the 
+pipeline, and handles the deployment. If the deployment fails (e.g., 500 Error), 
+it detects the spike in errors and rolls back the deployment instantly. 
+It's like having a DevOps engineer inside your IDE.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 3)
+================================================================================
+
+src/
+├── components/
+│   └── cicd/
+│       ├── PipelineDashboard.jsx     (Status of deployments: Queued, Deploying, Live)
+│       ├── DeploymentLogs.jsx        (Stream of live logs from cloud provider)
+│       └── RollbackControl.jsx       (Manual override for rollback)
+│
+├── store/
+│   └── pipelineStore.js              (Tracks current deployment state)
+│
+└── utils/
+    └── iacGenerator.js               (Generates Terraform/Serverless configs)
+
+electron/handlers/
+├── cicdHandler.js                    (Orchestrates build -> test -> deploy)
+├── cloudProviderBridge.js            (Wraps AWS/Vercel/GCP SDKs)
+└── healthMonitor.js                  (Background pinger to check deployment success)
+
+================================================================================
+SECTION 2: INFRASTRUCTURE-AS-CODE (IaC) GENERATION
+================================================================================
+
+Goal: Automatically describe the infrastructure needed.
+
+2.1 iacGenerator.js (src/utils/)
+  - When the user asks to deploy:
+    1. AI analyzes `package.json` to detect runtime (Node, Python, etc.).
+    2. AI scans for environment variables (e.g., `.env.example`).
+    3. Generate a `main.tf` (Terraform) or `serverless.yml` config file inside 
+       the project's `.nexcode/deploy/` folder.
+
+================================================================================
+SECTION 3: CLOUD PIPELINE ORCHESTRATOR
+================================================================================
+
+Goal: Automate the deployment loop.
+
+3.1 cicdHandler.js (electron/handlers/)
+  - Step 1: Run local tests (via `npm test`).
+  - Step 2: If pass, call `cloudProviderBridge.js`.
+  - Step 3: Trigger `terraform apply` (using the generated config).
+  - Step 4: Health Monitor: After deploy, check deployment URL for 200 OK.
+  - Step 5: Rollback Logic: If 200 OK is NOT received, execute `terraform destroy` 
+    or rollback to previous Git ref.
+
+================================================================================
+SECTION 4: AUTO-ROLLBACK ENGINE
+================================================================================
+
+Goal: Detect failure and recover instantly.
+
+4.1 healthMonitor.js (electron/handlers/)
+  - Maintain a persistent monitor (using `setInterval`).
+  - If deployment status is `Live`, ping the production URL every 30 seconds.
+  - If it returns > 5% error rate or latency > 2s:
+    - Trigger `cicdHandler:rollback`.
+    - Notify user: "Deployment unhealthy. Rolling back to commit hash <ID>."
+
+================================================================================
+SECTION 5: CI/CD DASHBOARD UI
+================================================================================
+
+5.1 PipelineDashboard.jsx
+  - A visual "Traffic Light" system:
+    - Green: Production Healthy.
+    - Yellow: Deploying / Testing.
+    - Red: Deployment Failed / Rollback In Progress.
+  - "Last Successful Deploy" timestamp.
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 4 - PART 3)
+================================================================================
+
+  'cicd:deploy-start'       renderer -> main  ({ provider, env })
+  'cicd:status-update'      main -> renderer  ({ stage, message })
+  'cicd:rollback-manual'    renderer -> main  ()
+  'cicd:logs-stream'        main -> renderer  ({ logLine })
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. Add Cloud SDKs to package.json (e.g., `aws-sdk`, `vercel` CLI wrappers).
+2. cloudProviderBridge.js — Implement the authentication (using user-provided 
+   API keys stored in Electron safeStorage).
+3. iacGenerator.js — Logic to generate the config file.
+4. cicdHandler.js — The main pipeline flow (Test -> Deploy -> Health Check).
+5. healthMonitor.js — The post-deployment monitoring loop.
+6. PipelineDashboard.jsx — Build UI.
+7. End-to-end test:
+   - Deploy a mock app to a test environment (e.g., Vercel Hobby).
+   - Simulate a failed deployment (e.g., inject a bad config).
+   - Verify the Auto-Rollback Engine detects the failure and reverts.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Credentials: NEVER hardcode cloud keys. Use an interactive prompt or 
+   `~/.aws/credentials` / environment file loader.
+2. Safety: The CI/CD engine MUST have a "Dry Run" mode. Never auto-deploy 
+   to Prod without a final "Approve" button press from the user.
+3. Git Safety: Always perform a `git stash` or create a temporary branch 
+   before deployment so the AI deployment doesn't corrupt the user's 
+   dirty local changes.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 4 — PART 3 OF 5
+================================================================================

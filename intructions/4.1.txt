@@ -1,0 +1,149 @@
+================================================================================
+   NEXCODE — PHASE 4 (PART 1 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "THE SELF-LEARNING ENGINE" (Failure Pattern Analysis)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 1-3 built the IDE, Agent Workflow, Integrations, and "God Mode" (Swarm/RAG/Self-Healing).
+Phase 4 SCOPE (build now):
+  1. Retrospective Handler — A background service that periodically analyzes 
+     `approvals_log` and `change_records` to detect "Failure Patterns".
+  2. Adaptive System Prompts — Automatically inject "Learned Lessons" back into 
+     the Swarm Architect’s context.
+  3. The "Anti-Pattern" Database — A local SQLite table to blacklist specific 
+     code structures or commands that previously caused crashes.
+  4. Learning Dashboard — A UI showing "How much has the AI learned from your 
+     projects?" (Performance improvement metrics over time).
+
+DO NOT implement: Team Collaboration, CI/CD, or Synthetic QA. Those are Parts 2-5.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS A SELF-LEARNING ENGINE?
+Usually, an AI is "stateless"—it makes a mistake, gets corrected, but forgets 
+that correction by the time you start a new chat.
+
+The "Self-Learning Engine" changes this. When an AI agent fails (e.g., runs a 
+command that errors out) and you (the human) correct it, or it auto-heals, 
+the system creates a "Retrospective Log". 
+- It maps the Error -> The Failed Attempt -> The Successful Fix.
+- It saves this as a "Learning Rule".
+- Next time, BEFORE the Swarm Architect starts, it searches this table. If it 
+  sees a match, it injects: "Warning: In this scenario, don't use X, use Y."
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 1)
+================================================================================
+
+Add/modify these files:
+
+src/
+├── components/
+│   └── learning/
+│       ├── LearningDashboard.jsx     (Visualizing learned patterns)
+│       └── LessonCard.jsx            (Shows specific learned rules)
+│
+├── store/
+│   └── learningStore.js              (Persisted "Learned Rules" and stats)
+│
+└── utils/
+    └── patternAnalyzer.js            (Logic to group failures and extract rules)
+
+electron/handlers/
+├── retrospectiveHandler.js           (Worker: analyzes logs in the background)
+└── learningHandler.js                (Manages the "Anti-Pattern" database)
+
+================================================================================
+SECTION 2: THE FAILURE PATTERN ANALYZER
+================================================================================
+
+Goal: Detect repeating failures and generalize them into rules.
+
+2.1 retrospectiveHandler.js (electron/handlers/)
+  - Periodically (or after every agent run) scan `approvals_log` (rejections) 
+    and `change_records` (reverted changes).
+  - Use a clustering algorithm (or simple string similarity on error messages) 
+    to see if the SAME error type happened >3 times.
+  - If a pattern is detected, trigger the `patternAnalyzer.js`.
+
+2.2 patternAnalyzer.js (src/utils/)
+  - Input: List of Failed Agent Runs + Error Logs.
+  - Logic: 
+    1. Extract the "Action Type" (e.g., `terminal_run`).
+    2. Extract the "Error Message".
+    3. Generate a "Lesson": "For terminal command X, always include flag Y to 
+       avoid error Z."
+  - Output: A new rule object: `{ trigger: string, avoid: string, suggest: string }`.
+
+================================================================================
+SECTION 3: ADAPTIVE SYSTEM PROMPTS (SWARM INTEGRATION)
+================================================================================
+
+Goal: Inject the AI's own "experience" into the Swarm context.
+
+3.1 swarmHandler.js (Phase 3 EXTENSION)
+  - Before the Architect starts, query `learningStore`.
+  - Fetch all "Learned Rules" that match the current user prompt.
+  - Inject into Architect Prompt:
+    ```text
+    --- LEARNED LESSONS (Self-Correction Layer) ---
+    Previous failed attempts detected:
+    - Rule: {rule.trigger} -> Avoid {rule.avoid}, use {rule.suggest}.
+    -----------------------------------------------
+    ```
+
+================================================================================
+SECTION 4: THE LEARNING UI
+================================================================================
+
+4.1 LearningDashboard.jsx
+  - Shows a chart: "Errors Fixed Automatically: 12" | "Human interventions: 2".
+  - Shows a list of "Learned Rules".
+  - Allow user to "Delete" or "Edit" a rule if the AI learned a wrong lesson.
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PHASE 4 - PART 1)
+================================================================================
+
+  'learning:get-rules'        renderer -> main  () -> Rule[]
+  'learning:update-rule'      renderer -> main  (rule)
+  'learning:trigger-analysis' renderer -> main  () // Force retrain
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER
+================================================================================
+
+1. learningHandler.js — Setup the SQLite table `learned_rules`.
+2. patternAnalyzer.js — Implement the clustering logic (basic keyword matching 
+   to start).
+3. retrospectiveHandler.js — Implement background worker to crawl logs.
+4. Modify swarmHandler.js to perform the lookup and prompt injection.
+5. learningStore.js — Create the Zustand store for managing rules.
+6. LearningDashboard.jsx — Build UI.
+7. End-to-end test:
+   - Run a faulty command twice that results in a known error (e.g., missing dependency).
+   - Verify the `retrospectiveHandler` creates a "Learned Rule".
+   - Run the same command again (or a similar one).
+   - Verify in the Chat Panel that the AI Architect now explicitly includes 
+     the fix in its planning phase.
+
+================================================================================
+SECTION 7: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Performance: The `retrospectiveHandler` MUST run with low priority. 
+   Do not block the main Electron loop. 
+2. Precision: If the AI incorrectly identifies a pattern, the user MUST have 
+   the ability to kill that rule in the UI. 
+3. No hallucination: The "Learned Rules" database must be strictly filtered. 
+   If the AI generalizes too broadly, the rules become useless.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 4 — PART 1 OF 5
+================================================================================

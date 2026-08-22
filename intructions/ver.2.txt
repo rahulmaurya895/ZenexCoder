@@ -1,0 +1,91 @@
+================================================================================
+   NEXCODE V2 ARCHITECTURE & FEATURE IMPLEMENTATION LOG (VERSION 2.0)
+================================================================================
+CREATED AT: 2026-08-10
+STATUS: ACTIVE & CONTINUOUSLY UPDATED
+================================================================================
+
+1. OVERVIEW
+This document tracks all new features, architectural upgrades, low-RAM optimizations,
+security enhancements, and UX improvements implemented in NexCode beyond the initial
+blueprints (1.txt to 4.5.txt).
+
+================================================================================
+2. COMPLETED V2 UPGRADES & ENHANCEMENTS
+================================================================================
+
+[UPDATED: 2026-08-10] — MODULE 7: MULTI-MODAL UI GENERATOR (VISION-TO-CODE)
+- Swarm Vision Persona (`swarmPersonas.js`): Added `vision_engineer` persona to analyze UI screenshots, wireframes, or sketches and output React + Tailwind CSS components.
+- Image Drag-and-Drop Handler (`ImageDropzone.jsx`): Built drag-and-drop zone wrapping `ChatPanel.jsx` to capture paste and drop events for UI mockups.
+- Native Image Payload Compression (`visionHandler.js`): Resizes base64 images to 1280px max dimension JPEG (< 500KB) using Electron `nativeImage` to prevent API/IPC payload bottlenecking.
+- Live Component Preview Panel (`VisualPreviewPanel.jsx`): Built isolated iframe live rendering sandbox alongside Monaco Editor with Visual / Code tabs and workspace save buttons.
+
+[UPDATED: 2026-08-10] — MODULE 6: META-PROMPT OPTIMIZER ENGINE (XML CoT EXPANSION)
+- High-Speed Preprocessing (`promptEngineHandler.js`): Intercepts raw user prompts and expands them in < 5ms into structured XML tags (`<objective>`, `<context>`, `<constraints>`, `<reasoning_protocol>`, `<output_format>`).
+- Auto-Prompt UI Toggle (`PromptOptimizerToggle.jsx`): Built toggle button with Sparkles icon in `ChatInput.jsx` to switch between Auto-Prompt XML Mode and Raw Prompt mode.
+- Context-Aware System Ingestion: Automatically injects current project framework (`React/Vite/Electron`) and workspace path into prompt `<context>`.
+- Collapsible XML Inspector (`MessageBubble.jsx`): Added a "View Structured XML Meta-Prompt (<800ms CoT Expansion)" collapsible dropdown for users to view how raw prompts were expanded for Swarm Architect.
+
+[UPDATED: 2026-08-10] — MODULE 5: PROACTIVE CHAOS ENGINEERING AGENT (RED-TEAM SANDBOX)
+- Swarm Red-Team Persona: Added `chaos_agent` persona to `swarmPersonas.js` with malicious red-team system prompt for stress testing edge cases.
+- Isolated Sandbox Execution (`chaosHandler.js`): Automatically listens for file save events, generates destructive vectors (null parameters, high memory stress arrays, SQL injection payloads), and executes them strictly inside the Windows Sandbox (`sandboxRunCommand`).
+- Crash Capture & Preemptive Patching: If a test script crashes the Sandbox, captures the stack trace and generates a preemptive code patch.
+- Red-Themed UI (`ChaosMonitor.jsx`): Built dedicated visual dashboard in Settings with dark red borders (`.chaos-red-theme`), live attack simulation stream, crash filter chips, and interactive patch suggestion cards.
+
+[UPDATED: 2026-08-10] — MODULE 4: HYPER-PERSONALIZED SHADOW AI (STYLE-AWARE AUTOCOMPLETE)
+- Created `shadowAIHandler.js` in Electron main process to fetch GitHub commit patches and parse AST style heuristics (indentation spaces/tabs, string quotes ' vs ", naming camelCase/snake_case).
+- Encrypted Profile Storage: Style heuristics stored in `nexcode-shadow-style-profile.json` using `safeStorage` without raw code plain-text retention.
+- Style Profile Injection: Updated `speculativeHandler.js` (`startSwarmRun()`) to prepend `buildStylePromptPrefix()` to autocomplete prompts, forcing inline completions to strictly mirror user formatting conventions.
+- Created `ShadowTrainerUI.jsx` in Settings / Integrations Hub for selecting baseline GitHub repositories and authorizing access via GitHub PAT.
+
+[UPDATED: 2026-08-10] — MODULE 3: ULTRA-FAST SEARCH INGESTION (SerpApi INTEGRATION)
+- Created UI component `SerpApiSettings.jsx` in SettingsPanel to store and encrypt SerpApi keys via `safeStorage`.
+- Built `fastSearchHandler.js` with `executeFastSearch(query)` calling the SerpApi Google engine endpoint.
+- High-Speed Parsing (< 1.5s): Extracts `organic_results` (top 5), `answer_box`, and `related_questions` and minifies them into clean Markdown string to prevent context-window overflow.
+- Persona Tooling & Directives: Added `web_search_fast` to `allowedTools` in `swarmPersonas.js` for Senior Dev (Coder) and SecOps. Updated system prompts to strictly prioritize `web_search_fast` over heavy Playwright browser navigation when querying syntax, API docs, or error solutions.
+- System Context Routing: Updated `toolSystemContext()` in `aiHandler.js` to enforce fast API search dispatches.
+
+[UPDATED: 2026-08-10] — MODULE 2: EXTERNAL AUTOMATION WEBHOOKS (n8n INTEGRATION)
+- Created UI component `N8nConfigPanel.jsx` in Settings / Connections Hub to configure n8n Workspace URL, Webhook Endpoint, and Auth Secret Tokens.
+- Created `automationHandler.js` in Electron main process with encrypted credential storage using `safeStorage`.
+- Dynamic POST Payload Builder: Wraps Swarm Architect consensus outputs, execution ID, and task metadata into structured JSON.
+- Architect Persona Tooling: Added `trigger_n8n_workflow` to `allowedTools` in `swarmPersonas.js` enabling the Lead Architect to invoke cloud CI/CD automations directly from the IDE.
+- Real-Time Progress & Status UI: Displays live HTTP progress states (`sending`, `success` HTTP 200 OK, `error`) with user notification center integration.
+
+[UPDATED: 2026-08-10] — MODULE 1: HYBRID CLOUD-NATIVE ENGINE (REMOTE OFFLOADING)
+- Added Zustand Store `hybridCloudStore.js` to manage remote Oracle Cloud instance configuration (IP, SSH Key, SSH Port, Local/Remote Tunnel Ports).
+- Added `oracleCloudHandler.js` in Electron main process to monitor OS free RAM/CPU (`os.freemem()`).
+- Autonomous SSH Tunneling: When local RAM usage exceeds 85%, spins up an encrypted SSH tunnel (`ssh -L 11435:127.0.0.1:11434 ubuntu@IP`).
+- Base URL Dynamic Rewriting in `ollamaHandler.js`: When offloaded, AI requests are routed through `http://127.0.0.1:11435`.
+- Graceful Degradation: If remote connection drops/times out, seamlessly retracts to local processing with user notifications.
+
+[UPDATED: 2026-08-10] — PIXEL-PERFECT APPEARANCE & CUSTOM THEME PANEL
+- Created `AppearanceSettings.jsx` matching 1:1 user design preference.
+- Features: Light / Dark / System Sync Modes, Preset selectors (Soft Gray, Oled Black, Cyber Neon), and custom HTML Color Pickers (Background, Text, Accent hex codes).
+- Chat Customizer: Verbose Agent Thinking steps toggle + Segmented Conversation Width Selector (Default 900px, Narrow 720px, Wide 100%).
+
+[UPDATED: 2026-08-10] — FREE PRIVACY-FIRST VOICE AI ENGINE
+- Replaced paid OpenAI Realtime API dependency with Free Web Speech API (webkitSpeechRecognition) & Native Browser TTS.
+- Zero API Key required, ₹0 per-minute charges, and 100% local privacy option.
+
+[UPDATED: 2026-08-10] — SMART INTENT ROUTING & MULTI-ROLE SWARM DIRECTIVES
+- Implemented Intent Classifier in `aiHandler.js`: Casual greetings ("hi", "hello") return direct text responses without erroneously launching browser/computer tools.
+- Multi-Role Engineering Protocol: Enforced Architect -> Developer -> QA -> SecOps planning and relative file path resolution.
+
+[UPDATED: 2026-08-10] — PERSISTENT BROWSER SESSION & CHROME PROFILE STORAGE
+- Configured Chromium user data directory under `userData/managed-browser-profile`.
+- Added `--disable-blink-features=AutomationControlled` to preserve WhatsApp/GitHub logins across app restarts.
+
+[UPDATED: 2026-08-10] — 8GB RAM PC OPTIMIZATION & ULTRA-LIGHT MODELS
+- Auto-process kill on browser completion (`browserStop()`).
+- Added 4-bit Quantized models (`Qwen 2.5 Coder 1.5B`, `Llama 3.2 1B`) consuming < 1.5GB RAM for 8GB RAM PCs.
+
+[UPDATED: 2026-08-10] — GITHUB AUTHENTICATION & SINGLE-BOOT WINDOWS SANDBOX
+- Direct GitHub Personal Access Token UI button in Git Panel (`GitSyncBar.jsx`).
+- Single-boot persistent PowerShell IPC Listener Bridge (`sandboxHandler.js`) for instant command execution.
+
+================================================================================
+3. CONTINUOUS UPDATE RULE FOR AGENT
+================================================================================
+- Every time a new feature, bug fix, or optimization is implemented in NexCode, the AI Agent must log the changes in this `ver.2.txt` file before concluding the task.
+================================================================================

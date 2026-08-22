@@ -1,0 +1,184 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 5 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "LOCAL HARDWARE CLUSTERING" (Distributed GPU Grid)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 3 Parts 1-4 built the Swarm, Knowledge Graph, Speculative Execution, 
+and Zero-Touch Self-Healing.
+Phase 3 SCOPE (build now):
+  1. LAN Discovery Engine — Use mDNS (Bonjour) to automatically detect other 
+     computers on your local network running NexCode.
+  2. Secure Peer-to-Peer Pairing — Establish an encrypted WebSocket connection 
+     between the "Master" node (your laptop) and the "Worker" node (your PC) 
+     using a 6-digit pairing PIN.
+  3. AI Offloading Router — Intercept LLM generation requests (Ollama) and 
+     route them to the Worker node's GPU over the LAN instead of the local CPU.
+  4. Distributed Swarm — Allow the Master node to run the Architect agent locally 
+     while the Worker node runs the Coder agent simultaneously, cutting Swarm 
+     processing time in half.
+  5. Cluster UI Dashboard — A visual topology map of your local hardware grid.
+
+DO NOT implement: Realtime Full-Duplex Audio. That is Part 6.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS LOCAL HARDWARE CLUSTERING?
+Let's say you are sitting on your couch coding on a lightweight MacBook Air (8GB RAM). 
+Running a local AI model on it drains the battery in 45 minutes and makes the 
+laptop overheat. However, in your bedroom, you have a massive Windows Gaming PC 
+with an RTX 4090 GPU just sitting idle.
+
+Clustering bridges them. Both run NexCode. 
+When you type a prompt on your MacBook, the MacBook sends the prompt over your 
+WiFi to the Gaming PC. The PC's massive GPU processes the AI thought 10x faster 
+than the Mac ever could, and sends the text stream back to your MacBook's screen.
+To the user, it feels like the MacBook suddenly gained a supercomputer's power. 
+No cloud fees, no internet latency, complete privacy.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 5)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   └── cluster/
+│       ├── ClusterDashboard.jsx      (Map of Master/Worker nodes, hardware stats)
+│       ├── NodeCard.jsx              (Shows IP, OS, Ping, CPU/GPU load of a node)
+│       └── PairingModal.jsx          (UI to enter the 6-digit security PIN)
+│
+├── store/
+│   └── clusterStore.js               (Connected nodes, network status, active routing)
+│
+└── utils/
+    └── loadBalancer.js               (Decides which node handles which AI task)
+
+electron/handlers/
+├── networkDiscovery.js               (mDNS/Bonjour broadcaster and scanner)
+├── websocketServer.js                (Runs on the Worker node to accept connections)
+└── websocketClient.js                (Runs on the Master node to send payloads)
+
+================================================================================
+SECTION 2: LAN DISCOVERY & SECURE PAIRING
+================================================================================
+
+Goal: Find devices effortlessly but prevent random people on a Starbucks WiFi 
+from hacking your desktop.
+
+2.1 Install Dependencies
+  Add to package.json: `npm install bonjour-service ws`
+
+2.2 networkDiscovery.js (electron/handlers/)
+  - On app start, broadcast a Bonjour service: 
+    `{ name: 'NexCode-Node-' + os.hostname(), type: 'nexcode', port: 44556 }`
+  - Simultaneously scan for `_nexcode._tcp`. Emit `cluster:node-found` to the UI 
+    when a new machine appears on the LAN.
+
+2.3 Secure Handshake (websocketServer.js & Client)
+  - When the user clicks "Connect" on the MacBook (Master), it initiates a 
+    WebSocket connection to the PC (Worker).
+  - The PC shows a system toast: "MacBook-Air is trying to connect. PIN: 849201".
+  - The user types `849201` into the MacBook's `PairingModal.jsx`.
+  - Upon success, upgrade the connection to use AES-256 encryption using a 
+    shared session key.
+
+================================================================================
+SECTION 3: AI OFFLOADING ROUTER
+================================================================================
+
+Goal: Hijack the Ollama API calls and send them across the room.
+
+3.1 ollamaService.js (Phase 1 EXTENSION)
+  - Modify the base URL configuration. 
+  - Instead of hardcoding `http://localhost:11434`, check `clusterStore`.
+  - If a Worker node is connected and marked as "Primary GPU", the `ollamaService` 
+    should send the request to `websocketClient.js`, which wraps the payload and 
+    sends it to the Worker.
+  - The Worker receives the payload, makes the HTTP call to its OWN local Ollama 
+    instance, and streams the chunks back over the WebSocket.
+  - The Master receives the chunks and updates the UI exactly as if it was local.
+
+3.2 Distributed Swarm (loadBalancer.js)
+  - During a Swarm Run (Phase 3 Part 1), the Master node can split tasks.
+  - While the remote Worker node (RTX 4090) generates the heavy Coder output, 
+    the local Master node (MacBook) can simultaneously run the lighter Architect 
+    planning model.
+
+================================================================================
+SECTION 4: CLUSTER UI DASHBOARD
+================================================================================
+
+Goal: Make the invisible network visible.
+
+4.1 ClusterDashboard.jsx (Connections Hub slide-over or Sidebar tab)
+  - Visual Topology: A central "You (Master)" node connected by animated dashed 
+    lines to "Worker" nodes.
+  - Network Metrics: Show real-time ping (e.g., `4ms`) on the connecting lines.
+  
+4.2 NodeCard.jsx
+  - Shows OS Icon (Windows/Mac/Linux).
+  - Hostname (e.g., `DESKTOP-X92A`).
+  - Hardware status: Ask the Worker node to stream its `os.freemem()` and 
+    `os.cpus()` load every 5 seconds. Render tiny sparkline charts.
+  - Toggles:
+    - [x] Use for AI generation (Ollama offloading).
+    - [ ] Use for background indexing (Vector DB offloading).
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 5)
+================================================================================
+
+  'cluster:scan-start'       renderer -> main
+  'cluster:node-found'       main -> renderer  ({ hostname, ip, port })
+  'cluster:request-pair'     renderer -> main  ({ ip })
+  'cluster:verify-pin'       renderer -> main  ({ ip, pin })
+  'cluster:status-update'    main -> renderer  ({ nodeId, cpuLoad, ramLoad })
+  'cluster:disconnect'       renderer -> main  ({ nodeId })
+
+================================================================================
+SECTION 6: IMPLEMENTATION ORDER
+================================================================================
+
+1. Check and add `bonjour-service` and `ws` to package.json.
+2. networkDiscovery.js (electron) — Implement the mDNS broadcaster and scanner.
+3. websocketServer.js / websocketClient.js — Implement the secure PIN handshake 
+   and message passing infrastructure.
+4. Register new IPC channels in main.js and preload.js.
+5. clusterStore.js — Create the Zustand store for managing discovered and 
+   connected nodes.
+6. PairingModal.jsx, NodeCard.jsx, ClusterDashboard.jsx (UI construction).
+7. ollamaService.js — Refactor to route generation requests through the 
+   WebSocket client if offloading is enabled.
+8. End-to-end test (Requires two computers on same WiFi):
+   - Run NexCode on PC A and PC B.
+   - Verify PC A sees PC B in the Cluster Dashboard.
+   - Click Connect, verify the PIN displays on PC B and can be entered on PC A.
+   - Send a chat message on PC A.
+   - Verify the console on PC B shows it receiving the request, processing it, 
+     and sending the stream back.
+   - Verify the chat streams perfectly on PC A's screen.
+
+================================================================================
+SECTION 7: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1, 2, and 3 (Parts 1-4) codebase.
+2. Fallback Mechanism: If the WebSocket connection drops mid-generation (e.g., 
+   laptop goes to sleep or WiFi drops), `websocketClient` MUST throw a specific 
+   error so the Master node can instantly fallback to its own local `ollamaService` 
+   and retry the prompt without failing the user.
+3. Keep the payload formats strict. Wrap Ollama JSON in a standard envelope: 
+   `{ type: 'AI_STREAM_CHUNK', payload: { ... } }` to differentiate it from 
+   hardware metric updates `typeof 'HARDWARE_STATS'`.
+
+START BUILDING NOW. FOLLOW SECTION 6 IN ORDER.
+================================================================================
+END OF PHASE 3 — PART 5 OF 6
+================================================================================

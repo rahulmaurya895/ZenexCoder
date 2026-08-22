@@ -1,0 +1,208 @@
+================================================================================
+   NEXCODE — PHASE 2B (PART 7 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of NEXCODE_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt
+   THEME: "COMPUTER USE" — Screen Capture, Mouse & Keyboard Control
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Parts 1-6 built: Connections Hub, Git Core, Environments, MCP Servers, and 
+Browser Integration.
+Part 7 SCOPE (build now):
+  1. Desktop Automation Engine — Integrate `@nut-tree/nut-js` (or similar 
+     robust OS-level automation library) to control the host machine.
+  2. Agent Computer Tools — Expose `computer_screenshot`, `computer_mouse_move`, 
+     `computer_mouse_click`, and `computer_keyboard_type` to the LLM.
+  3. Safety & Kill Switch — A global shortcut (e.g., Esc x3 or Ctrl+Shift+K) 
+     and a giant UI button to instantly revoke control.
+  4. Computer Use Panel — A UI to monitor what the AI is doing on the OS level, 
+     showing coordinate mapping and action logs.
+  5. Permissions Gating — Route OS-level actions through Phase 2A's approval 
+     system.
+
+DO NOT implement: Hooks, Agent env (Windows Sandbox), terminal shell selector, 
+popout window, dictation, or notifications. Those are Parts 8-10.
+
+NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
+wired to real state/IPC.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 7 ONLY)
+================================================================================
+
+Add these files to the existing nexcode/ structure:
+
+src/
+├── components/
+│   └── computer/
+│       ├── ComputerUsePanel.jsx      (Full panel: Settings, Live Log, Kill Switch)
+│       ├── ComputerActionLog.jsx     (Live scrolling list of mouse/keyboard actions)
+│       └── EmergencyStopButton.jsx   (Giant red button to abort agent run and 
+│                                       lock controls)
+│
+├── store/
+│   └── computerStore.js              (Enabled state, active session, action logs)
+│
+└── hooks/
+    └── useComputerUse.js             (Wraps computerHandler IPC calls, handles 
+                                        kill switch listener)
+
+electron/handlers/
+└── computerHandler.js                (Uses nut.js for OS-level mouse/keyboard, 
+                                        and Electron's desktopCapturer for 
+                                        screenshots)
+
+================================================================================
+SECTION 2: DESKTOP AUTOMATION & AGENT TOOLS
+================================================================================
+
+Goal: The AI must be able to view the screen (screenshot) and interact with it 
+(x,y coordinates for mouse, string inputs for keyboard) similar to Anthropic's 
+Computer Use API.
+
+2.1 Install Dependencies
+  Add to package.json: `npm install @nut-tree/nut-js`
+
+2.2 computerHandler.js (electron/handlers/)
+  Maintain a strict safety lock. If `isLocked === true`, all commands are ignored.
+  IPC-exposed functions:
+    - computerGetScreen() -> Returns base64 screenshot of the primary display 
+      and screen dimensions (width, height).
+    - computerMouseMove(x, y) -> Moves cursor using nut.js.
+    - computerMouseClick(button, doubleClick) -> Left/Right/Middle clicks.
+    - computerKeyboardType(text) -> Types text using nut.js.
+    - computerKeyboardPress(keys) -> For shortcuts (e.g., ['Control', 'C']).
+    - computerLock() -> The Kill Switch. Instantly sets `isLocked = true`.
+    - computerUnlock() -> Re-enables control.
+
+2.3 AI Service Injection (openaiService.js / anthropicService.js)
+  Add these built-in tools to the LLM payload:
+    - `computer_screenshot`: {} -> Returns base64 image + screen dimensions.
+    - `computer_mouse_action`: { action: "move"|"click"|"double_click", x?: number, y?: number, button?: "left"|"right" }
+    - `computer_keyboard_type`: { text: string }
+    - `computer_keyboard_shortcut`: { keys: string[] }
+
+  Update the System Prompt:
+  "You have full desktop access. Use 'computer_screenshot' to view the screen 
+   and find exact coordinates. Move the mouse to those coordinates, then click. 
+   Type carefully. If you lose track, take another screenshot."
+
+================================================================================
+SECTION 3: THE COMPUTER USE UI PANEL
+================================================================================
+
+Goal: A dashboard to enable/disable this dangerous feature and monitor logs.
+
+3.1 ComputerUsePanel.jsx (Connections Hub slide-over or Sidebar tab)
+  Layout:
+    - Top: Master Enable/Disable Toggle. (If disabled, AI tools are hidden 
+      from LLM context).
+    - Main: ComputerActionLog.jsx showing a live feed:
+        `[14:02:01] 📸 Took screenshot (1920x1080)`
+        `[14:02:05] 🖱️ Moved mouse to (450, 890)`
+        `[14:02:06] 🖱️ Left Click`
+        `[14:02:09] ⌨️ Typed "npm run start"`
+    - Bottom: EmergencyStopButton.jsx.
+
+3.2 EmergencyStopButton.jsx
+  - A large, highly visible button (Background: Error red #EF4444).
+  - Text: "EMERGENCY STOP (Esc x3)".
+  - Clicking this OR pressing Escape 3 times globally:
+      1. Calls `computerHandler.computerLock()`.
+      2. Calls `agentStore.stop()` (Phase 2A) to abort the current AI run.
+      3. Shows a massive system toast: "AI CONTROL TERMINATED".
+
+================================================================================
+SECTION 4: PERMISSIONS GATING (PHASE 2A TIE-IN)
+================================================================================
+
+Goal: OS-level control is a massive security risk. It requires the highest 
+level of consent.
+
+4.1 approvalRules.js (Phase 2A) — EXTEND
+  Add new rules:
+  - actionType: 'computer_screenshot'
+    riskLevel: 'medium' (Executes automatically in Auto-review/Full access, 
+    prompts in Default).
+  - actionType: 'computer_interact' (Mouse & Keyboard)
+    riskLevel: 'high' (Treat similarly to `git_destructive`). 
+    Even in "Full Access", the user MUST explicitly check a box in the 
+    Computer Use Panel saying "Allow unattended mouse/keyboard control for 
+    this session" before it can bypass the per-action approval prompt.
+
+4.2 ApprovalRequest.jsx (Phase 2A) — EXTEND
+  If an approval is triggered for `computer_interact`:
+  - Show warning: "AI wants to take control of your mouse/keyboard."
+  - Show the intended action (e.g., Move to X: 500, Y: 200).
+
+================================================================================
+SECTION 5: NEW IPC CHANNELS SUMMARY (PART 7)
+================================================================================
+
+  'computer:get-screen'     renderer -> main  () -> { base64, width, height }
+  'computer:mouse-action'   renderer -> main  ({ action, x, y, button })
+  'computer:keyboard-type'  renderer -> main  ({ text })
+  'computer:keyboard-keys'  renderer -> main  ({ keys })
+  'computer:lock'           renderer -> main
+  'computer:unlock'         renderer -> main
+  'computer:action-logged'  main -> renderer  ({ type, details, timestamp })
+
+================================================================================
+SECTION 6: CONNECTIONS HUB WIRING (PART 7)
+================================================================================
+
+Flip the 'computer_use' entry in connectionRegistry.js from 'coming_soon' 
+to 'available':
+  {
+    id: 'computer_use',
+    name: 'Computer Use',
+    description: 'Grant the AI control over your mouse, keyboard, and screen',
+    icon: 'MonitorPlay',
+    status: 'available',
+    settingsRoute: ComputerUsePanel
+  }
+
+Ensure the ConnectionCard "Configure" button opens the ComputerUsePanel.
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER (PART 7)
+================================================================================
+
+1. Add `@nut-tree/nut-js` to package.json and run `npm install`.
+2. computerHandler.js (electron) — Implement nut.js wrappers, desktopCapturer 
+   for screenshots, and the `isLocked` safety mechanism.
+3. Register global shortcut (Esc x3) in electron/main.js for the kill switch.
+4. Register new IPC channels in main.js and preload.js.
+5. computerStore.js + useComputerUse.js (React state).
+6. ComputerActionLog.jsx and EmergencyStopButton.jsx.
+7. ComputerUsePanel.jsx (Assemble layout).
+8. approvalRules.js — Add `computer_screenshot` and `computer_interact`.
+9. openaiService.js / anthropicService.js — Inject computer tools into LLM 
+   (only if enabled in ComputerUsePanel).
+10. connectionRegistry.js — flip to 'available'.
+11. End-to-end test:
+   - Enable Computer Use.
+   - Run AI in "Default" permission mode: "Take a screenshot and click the center of the screen."
+   - Verify Approval Request pops up for the screenshot, and then for the click.
+   - Approve both. Verify mouse moves.
+   - Hit "EMERGENCY STOP" mid-run and verify the agent halts completely.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-6) codebase.
+2. SAFETY FIRST: The kill switch is non-negotiable. It must bypass everything 
+   and instantly lock `nut.js` and halt the LLM generation stream.
+3. In `computerGetScreen()`, ensure the screenshot is compressed (JPEG, max 
+   1920x1080 equivalent) before sending it to the LLM to avoid massive token 
+   costs and IPC lag.
+4. Do not attempt to track continuous mouse movement visually; only log the 
+   discrete commands sent by the AI.
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+
+================================================================================
+END OF PHASE 2B — PART 7 OF 10
+NEXT FILE: NEXCODE_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt (Hooks System)
+================================================================================

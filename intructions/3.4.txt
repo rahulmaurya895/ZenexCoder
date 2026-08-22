@@ -1,0 +1,199 @@
+================================================================================
+   NEXCODE — PHASE 3 (PART 4 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   THEME: "ZERO-TOUCH SELF-HEALING" (Prod-to-Dev Loop)
+   READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
+================================================================================
+
+CONTEXT FOR CODEX:
+Phase 3 Parts 1-3 built the Swarm, Knowledge Graph, and Speculative Execution.
+Phase 3 SCOPE (build now):
+  1. Production Telemetry Integration — Connect NexCode directly to Sentry, 
+     Datadog, or generic error APIs to pull live production crash reports.
+  2. Autonomous Worktree Spawning — When a critical error arrives, automatically 
+     create a background Git Worktree specifically for this bug.
+  3. The "Healer" Swarm Loop — Feed the stack trace to the Swarm. Have the Swarm 
+     reproduce the bug, write a fix, and generate unit tests to verify the fix.
+  4. Auto-PR Generation — Push the fixed branch to the remote repository and 
+     raise a GitHub/GitLab Pull Request completely in the background.
+  5. Incident Command UI — A dashboard showing live production errors and 
+     their real-time "Healing" progress.
+
+DO NOT implement: Hardware Clustering or Realtime Audio. Those are Parts 5-6.
+
+NO FAKE UI. Every component must be FUNCTIONAL and wired to real state/IPC.
+
+================================================================================
+SECTION 0: CONCEPTUAL INTRODUCTION FOR BEGINNERS
+================================================================================
+
+WHAT IS ZERO-TOUCH SELF-HEALING?
+Usually, when an app crashes in production, a developer gets a PagerDuty alert 
+at 3 AM. They wake up, open their laptop, find the Sentry error log, switch 
+their Git branch, try to reproduce the bug, write a fix, run tests, push the 
+branch, and open a Pull Request.
+
+With Zero-Touch Self-Healing, the IDE does the 3 AM shift.
+1. NexCode intercepts the Sentry alert.
+2. It silently creates a background folder (Git Worktree) so it doesn't mess 
+   up whatever you were currently working on.
+3. The Swarm Engine reads the stack trace, finds the exact file in the Vector DB, 
+   fixes the code, and writes a test.
+4. NexCode pushes the fix to GitHub and opens a Pull Request.
+5. You wake up at 8 AM. You check your phone. You see: "Critical Prod Bug 
+   fixed. PR #402 is awaiting your review." You review the code, click Merge, 
+   and go back to sleep. The AI never deploys to prod (for safety); it only 
+   prepares the fix.
+
+================================================================================
+SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 4)
+================================================================================
+
+Add/modify these files in the nexcode/ structure:
+
+src/
+├── components/
+│   └── healing/
+│       ├── IncidentDashboard.jsx     (Lists prod bugs and their healing status)
+│       ├── IncidentCard.jsx          (Shows stack trace snippet, status bar)
+│       └── IntegrationSettings.jsx   (Input API keys for Sentry/Datadog/GitHub)
+│
+├── store/
+│   └── incidentStore.js              (Tracks fetched errors and active healing jobs)
+│
+└── hooks/
+    └── useSelfHealing.js             (Wraps incidentHandler IPC calls)
+
+electron/handlers/
+├── incidentHandler.js                (Polls Sentry/Datadog APIs for new issues)
+├── autoFixer.js                      (The orchestrator that links Git Worktrees, 
+                                        the Swarm, and GitHub API together)
+└── githubHandler.js                  (Wraps the Octokit SDK to create Branches & PRs)
+
+================================================================================
+SECTION 2: PRODUCTION TELEMETRY INGESTION
+================================================================================
+
+Goal: Securely fetch crash reports without exposing local ports to the internet.
+
+2.1 Install Dependencies
+  Add to package.json: `npm install @octokit/rest axios`
+
+2.2 incidentHandler.js (electron/handlers/)
+  - Desktop apps cannot easily receive webhooks safely. Instead, we use Polling.
+  - User configures a Sentry API Token and Project ID in `IntegrationSettings.jsx`.
+  - `incidentHandler.js` runs a `setInterval` (every 5 mins) to fetch `/api/0/projects/{organization_slug}/{project_slug}/issues/`.
+  - Filter for newly surfaced issues (e.g., `isUnhandled: true`, `firstSeen` within last hour).
+  - Map the payload to a standard format: `{ id, title, stackTrace, url, timestamp }`.
+  - Store these in the SQLite database to avoid duplicate processing.
+
+================================================================================
+SECTION 3: AUTONOMOUS WORKTREE & HEALER SWARM
+================================================================================
+
+Goal: Isolate the fix in the background without touching the user's active editor.
+
+3.1 autoFixer.js (electron/handlers/)
+  When a new critical incident is fetched:
+  - Step 1 (Git Isolation): Call `gitWorktreeAdd` (Phase 2B Part 2) to create 
+    a background folder: `.nexcode_worktrees/fix-sentry-issue-<id>`.
+  - Step 2 (Swarm Context): Pass the `stackTrace` to the `swarmHandler.js`.
+  - Step 3 (System Prompt override): Inject a specific intent to the Architect:
+    "You are debugging a production crash. Below is the stack trace. Analyze 
+    it, find the root cause, and hand off to the Coder to implement the fix."
+  - Step 4 (QA Requirement): The Swarm SecOps/QA persona MUST write a unit test 
+    that fails without the fix and passes with the fix.
+
+3.2 Preventing Runaway AI
+  - If the Swarm fails to compile/pass tests after 3 attempts, the `autoFixer` 
+    must ABORT the self-healing process. 
+  - Mark the incident as `Status: Manual Intervention Required` in the UI.
+
+================================================================================
+SECTION 4: AUTO-PR GENERATION (GITHUB INTEGRATION)
+================================================================================
+
+Goal: Deliver the fix directly to the team's remote repository.
+
+4.1 githubHandler.js (electron/handlers/)
+  - Instantiate Octokit with a user-provided GitHub Personal Access Token (PAT) 
+    stored securely in `electron-store` (Phase 1 encryption).
+  - Once the Swarm achieves consensus and tests pass in the worktree:
+    1. Commit changes: `git commit -m "fix(prod): auto-heal issue <id>"`
+    2. Push branch: `git push origin fix-sentry-issue-<id>`
+    3. Call Octokit `octokit.rest.pulls.create({ ... })`.
+  - The PR Body should be generated by the Architect:
+    ```markdown
+    ### Autonomous Bug Fix
+    **Issue:** Sentry Error #1029 (Null Reference in auth.js)
+    **Root Cause:** Found that user object could be null during OAuth redirect.
+    **Fix:** Added optional chaining and a fallback error redirect.
+    **Tests Added:** Yes.
+    ```
+
+================================================================================
+SECTION 5: INCIDENT COMMAND UI
+================================================================================
+
+Goal: A mission-control dashboard for production health.
+
+5.1 IncidentDashboard.jsx (Connections Hub slide-over or Sidebar tab)
+  - Two columns: "Active Incidents" and "Healed / PR Raised".
+  - Shows an empty state: "Production is stable. Zero errors in last 24h."
+
+5.2 IncidentCard.jsx
+  - Header: Error Title (e.g., `TypeError: Cannot read property 'id' of undefined`).
+  - Body: A small, scrollable, dark-mode terminal window showing the stack trace.
+  - Status Bar Tracker:
+    - [Fetch Error] ✓
+    - [Create Worktree] ✓
+    - [Swarm Analyzing] (Spinning icon)
+    - [Writing Tests] (Pending)
+    - [PR Raised] (Pending)
+  - Actions: "View on Sentry", "View PR", "Take Over Manually" (Instantly opens 
+    the worktree in the active Monaco Editor and stops the AI).
+
+================================================================================
+SECTION 6: NEW IPC CHANNELS SUMMARY (PHASE 3 - PART 4)
+================================================================================
+
+  'incident:fetch-manual'    renderer -> main  // Force a poll
+  'incident:new-alert'       main -> renderer  ({ incidentData })
+  'incident:healing-status'  main -> renderer  ({ incidentId, step, status })
+  'github:save-token'        renderer -> main  ({ token }) // Encrypts via safeStorage
+  'auto-fix:take-over'       renderer -> main  ({ incidentId }) // Kills AI, opens tree
+
+================================================================================
+SECTION 7: IMPLEMENTATION ORDER
+================================================================================
+
+1. Check and add `@octokit/rest` and `axios` to package.json.
+2. githubHandler.js (electron) — Implement token encryption and the PR creation API.
+3. incidentHandler.js — Write the Sentry/Datadog polling logic and SQLite caching.
+4. autoFixer.js — Wire the orchestration: Worktree -> Swarm -> Commit -> GitHub PR.
+5. Register new IPC channels in main.js and preload.js.
+6. incidentStore.js — Create the Zustand store for tracking healing workflows.
+7. IntegrationSettings.jsx, IncidentCard.jsx, IncidentDashboard.jsx (UI construction).
+8. End-to-end test (Simulated):
+   - Inject a mock Sentry payload into `incidentHandler.js`.
+   - Verify the UI shows the new incident.
+   - Verify `.nexcode_worktrees/` is created in your project directory.
+   - Verify the Swarm generates a fix and commits it.
+   - Verify a Pull Request is actually created on your test GitHub repository.
+
+================================================================================
+SECTION 8: FINAL INSTRUCTIONS TO CODEX
+================================================================================
+
+1. Build on top of EXISTING Phase 1, 2, and 3 (Parts 1-3) codebase.
+2. SAFETY FIRST: The AI MUST NEVER MERGE THE PR. The final step is always 
+   `octokit.rest.pulls.create()`. It must leave the PR open for human review.
+3. Cleanup: If the `autoFixer` fails to solve the bug, it must delete the 
+   temporary Git Worktree so the user's hard drive doesn't fill up with 
+   failed AI attempts over months of usage. Use `git worktree remove --force`.
+4. Ensure the Polling interval respects API rate limits (default: 5 minutes, 
+   never less than 1 minute).
+
+START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
+================================================================================
+END OF PHASE 3 — PART 4 OF 6
+================================================================================

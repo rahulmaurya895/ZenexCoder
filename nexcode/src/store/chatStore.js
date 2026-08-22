@@ -120,7 +120,7 @@ export const useChatStore = create((set, get) => ({
   },
   exportSession() {
     const session = get().sessions.find((item) => item.id === get().activeSessionId);
-    const title = session?.title || 'ZezenexCoderr Chat';
+    const title = session?.title || 'ZenexCoder Chat';
     return [`# ${title}`, '', ...get().messages.map((message) => `## ${message.role}\n\n${message.content}`)].join('\n\n');
   }
 }));

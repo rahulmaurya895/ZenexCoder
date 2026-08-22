@@ -119,7 +119,7 @@
     "appId": "com.zenexcoder.app",
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
-    "productName": "ZezenexCoderr",
+    "productName": "ZenexCoder",
     "directories": {
       "output": "dist"
     },

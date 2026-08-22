@@ -304,7 +304,7 @@ export async function mcpConnect(id) {
   setState(id, { status: STATUS_CONNECTING, error: '', tools: [], resources: [], resourceTemplates: [] });
 
   const client = new Client(
-    { name: 'ZezenexCoderr', version: app.getVersion?.() || '1.0.0' },
+    { name: 'ZenexCoder', version: app.getVersion?.() || '1.0.0' },
     { capabilities: {} }
   );
   const transport = new StdioClientTransport({

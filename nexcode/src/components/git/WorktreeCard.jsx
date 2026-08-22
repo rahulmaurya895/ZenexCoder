@@ -6,7 +6,7 @@ import { useWorktrees } from '@/hooks/useWorktrees';
  * @param {{worktree: object}} props
  */
 export default function WorktreeCard({ worktree }) {
-  const { openInZezenexCoderr, remove } = useWorktrees();
+  const { openInZenexCoder, remove } = useWorktrees();
   const { runWithApproval } = useApprovalAction();
 
   async function removeWorktree(force = false) {
@@ -36,7 +36,7 @@ export default function WorktreeCard({ worktree }) {
         {worktree.prunable && <span className="warning-pill">Prunable</span>}
       </div>
       <div className="chat-input-actions">
-        <button onClick={() => openInZezenexCoderr(worktree.path)} title="Open this worktree in ZezenexCoderr">
+        <button onClick={() => openInZenexCoder(worktree.path)} title="Open this worktree in ZenexCoder">
           <FolderOpen size={14} /> Open
         </button>
         {worktree.isMain ? (

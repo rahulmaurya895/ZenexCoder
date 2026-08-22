@@ -16,7 +16,7 @@ export default function PopoutContainer() {
       <div className="popout-titlebar">
         <div className="popout-title">
           <MessageSquare size={14} />
-          <span>ZezenexCoderr</span>
+          <span>ZenexCoder</span>
         </div>
         <button className="icon-button" onClick={() => togglePopout()} title="Hide popout">
           <X size={14} />

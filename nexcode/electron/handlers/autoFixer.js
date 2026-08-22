@@ -337,7 +337,7 @@ async function createHealingWorktree(incident, settings = {}, job) {
 function buildPrompt(incident, attempt, feedback = '') {
   return [
     'You are debugging a real production crash. Do not invent a pull request, deployment, or verification result.',
-    'Analyze the stack trace, find the root cause in this worktree, and produce executable ZezenexCoderr steps.',
+    'Analyze the stack trace, find the root cause in this worktree, and produce executable ZenexCoder steps.',
     'The Coder must include complete file contents for every changed file.',
     'The QA/SecOps personas must include at least one unit test file change that fails without the fix and passes with it.',
     'End only when the JSON handoff_to is "user_approval" and execution_plan.steps contains file_write steps for the fix and tests, plus test commands when known.',
@@ -384,12 +384,12 @@ function prBody(incident, consensus, testCommands = []) {
     '',
     `**Root Cause:** ${consensus.summary || consensus.handoff?.analysis || 'See code changes in this PR.'}`,
     '',
-    `**Fix:** ${consensus.handoff?.instructions || 'Implemented by ZezenexCoderr self-healing swarm.'}`,
+    `**Fix:** ${consensus.handoff?.instructions || 'Implemented by ZenexCoder self-healing swarm.'}`,
     '',
     `**Tests Added:** Yes`,
     testCommands.length ? `**Verification:** ${testCommands.join(', ')}` : '',
     '',
-    'ZezenexCoderr created this pull request for human review. It did not merge or deploy the change.'
+    'ZenexCoder created this pull request for human review. It did not merge or deploy the change.'
   ].filter(Boolean).join('\n');
 }
 

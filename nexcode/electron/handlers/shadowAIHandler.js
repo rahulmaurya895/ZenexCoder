@@ -111,7 +111,7 @@ export async function trainShadowAI(selectedRepos = [], githubToken = '') {
     filesAnalyzed: 0
   };
 
-  const headers = { 'User-Agent': 'ZezenexCoderr-ShadowAI/2.0' };
+  const headers = { 'User-Agent': 'ZenexCoder-ShadowAI/2.0' };
   if (githubToken) {
     headers['Authorization'] = `token ${githubToken}`;
   }

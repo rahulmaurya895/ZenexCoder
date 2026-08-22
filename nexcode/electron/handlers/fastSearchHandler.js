@@ -128,7 +128,7 @@ export async function executeFastSearch(query = '') {
 
   sendToAll('fast-search:status', { status: 'searching', query, startTime });
 
-  const response = await fetch(url, { headers: { 'User-Agent': 'ZezenexCoderr-FastSearch/2.0' } });
+  const response = await fetch(url, { headers: { 'User-Agent': 'ZenexCoder-FastSearch/2.0' } });
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');

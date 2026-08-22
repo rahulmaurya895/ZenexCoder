@@ -118,7 +118,7 @@ async function ensurePage() {
   if (page && !page.isClosed()) return page;
 
   // Keep the managed browser profile with the application, not inside the
-  // project currently open in ZezenexCoderr. The old cwd-based profile polluted
+  // project currently open in ZenexCoder. The old cwd-based profile polluted
   // project folders and could share browser state between unrelated projects.
   // Managed persistent browser profile path stored in user data directory
   const sessionDir = path.join(app.getPath('userData'), 'managed-browser-profile');
@@ -228,8 +228,8 @@ async function resolveLocator(input) {
   const raw = String(input || '').trim();
   if (!raw) throw new Error('Selector or element id is required.');
   const pageRef = await ensurePage();
-  const byZezenexCoderrId = pageRef.locator(`[data-zenexcoder-browser-id="${cssEscape(raw)}"]`);
-  if (await byZezenexCoderrId.count().catch(() => 0)) return byZezenexCoderrId.first();
+  const byZenexCoderId = pageRef.locator(`[data-zenexcoder-browser-id="${cssEscape(raw)}"]`);
+  if (await byZenexCoderId.count().catch(() => 0)) return byZenexCoderId.first();
 
   const byDomId = pageRef.locator(`#${cssEscape(raw)}`);
   if (await byDomId.count().catch(() => 0)) return byDomId.first();

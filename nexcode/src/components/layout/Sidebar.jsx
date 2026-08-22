@@ -62,7 +62,7 @@ export default function Sidebar({ activeView, onViewChange, onOpenSearch }) {
         <button className="icon-button" onClick={toggleSidebar} title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
           {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
         </button>
-        <div className="brand">ZezenexCoderr</div>
+        <div className="brand">ZenexCoder</div>
       </div>
 
       <div className="sidebar-nav">

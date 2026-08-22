@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const profileDirectories = [
   path.join(process.env.APPDATA, 'zenexcoder'),
-  path.join(process.env.APPDATA, 'ZezenexCoderr-TestProfile')
+  path.join(process.env.APPDATA, 'ZenexCoder-TestProfile')
 ];
 const userDataDir = profileDirectories[0];
 

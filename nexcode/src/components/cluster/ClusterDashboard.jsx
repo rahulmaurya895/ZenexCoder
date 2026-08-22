@@ -52,7 +52,7 @@ export default function ClusterDashboard() {
           <div className="topology-master">
             <Router size={22} />
             <strong>You (Master)</strong>
-            <span>{localNode?.hostname || 'Local ZezenexCoderr'}</span>
+            <span>{localNode?.hostname || 'Local ZenexCoder'}</span>
           </div>
           <div className="topology-workers">
             {connectedNodes.length ? (
@@ -104,7 +104,7 @@ export default function ClusterDashboard() {
           <section className="cluster-column">
             <div className="cluster-section-title">Workers</div>
             {loading ? <div className="muted-text">Loading cluster nodes...</div> : null}
-            {!nodes.length && !loading ? <div className="muted-text">No ZezenexCoderr nodes found on LAN yet.</div> : null}
+            {!nodes.length && !loading ? <div className="muted-text">No ZenexCoder nodes found on LAN yet.</div> : null}
             {connectedNodes.map((node) => (
               <NodeCard key={node.nodeId} node={node} onConnect={requestPair} onDisconnect={disconnect} onUseForAI={setUseForAI} onUseForIndexing={setUseForIndexing} />
             ))}

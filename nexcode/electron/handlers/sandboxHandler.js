@@ -10,7 +10,7 @@ const state = {
   running: false,
   projectPath: '',
   bridgeDir: '',
-  sandboxProjectPath: 'C:\\ZezenexCoderrProject',
+  sandboxProjectPath: 'C:\\ZenexCoderProject',
   lastWsbPath: '',
   lastError: ''
 };
@@ -32,7 +32,7 @@ function escapeXml(value = '') {
 
 function listenerScript() {
   return `$ErrorActionPreference = "Continue"
-$Bridge = "C:\\ZezenexCoderrProject\\.zenexcoder-sandbox"
+$Bridge = "C:\\ZenexCoderProject\\.zenexcoder-sandbox"
 $Commands = Join-Path $Bridge "commands"
 $Results = Join-Path $Bridge "results"
 New-Item -ItemType Directory -Force -Path $Commands | Out-Null
@@ -43,8 +43,8 @@ while ($true) {
     try {
       $job = Get-Content -Raw -Path $commandFile | ConvertFrom-Json
       Remove-Item -LiteralPath $commandFile -Force -ErrorAction SilentlyContinue
-      $cwd = if ($job.cwd) { $job.cwd } else { "C:\\ZezenexCoderrProject" }
-      if (!(Test-Path -LiteralPath $cwd)) { $cwd = "C:\\ZezenexCoderrProject" }
+      $cwd = if ($job.cwd) { $job.cwd } else { "C:\\ZenexCoderProject" }
+      if (!(Test-Path -LiteralPath $cwd)) { $cwd = "C:\\ZenexCoderProject" }
       Push-Location $cwd
       $output = ""
       $exitCode = 0

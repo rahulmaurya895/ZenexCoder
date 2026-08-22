@@ -39,7 +39,7 @@ export default function AgentEnvPanel() {
 
   async function approveFeatureEnable() {
     const ok = window.confirm(
-      'ZezenexCoderr needs administrator approval to enable Windows Sandbox. Windows may ask for UAC permission and may require a restart. Continue?'
+      'ZenexCoder needs administrator approval to enable Windows Sandbox. Windows may ask for UAC permission and may require a restart. Continue?'
     );
     if (!ok) return null;
     return enableFeature();
@@ -84,8 +84,8 @@ export default function AgentEnvPanel() {
               {featureReady
                 ? 'Windows Sandbox executable is installed.'
                 : feature?.likelyUnsupported
-                  ? 'This Windows edition may not include Windows Sandbox. ZezenexCoderr can still try admin enable with approval.'
-                  : 'ZezenexCoderr can enable the Windows Sandbox optional feature after your approval.'}
+                  ? 'This Windows edition may not include Windows Sandbox. ZenexCoder can still try admin enable with approval.'
+                  : 'ZenexCoder can enable the Windows Sandbox optional feature after your approval.'}
             </span>
           </div>
 
@@ -134,7 +134,7 @@ export default function AgentEnvPanel() {
             </button>
           </div>
 
-          {restartNeeded && <div className="browser-error-banner">Windows Sandbox was enabled but Windows must restart before ZezenexCoderr can launch it.</div>}
+          {restartNeeded && <div className="browser-error-banner">Windows Sandbox was enabled but Windows must restart before ZenexCoder can launch it.</div>}
           {enableResult?.message && !restartNeeded && <div className="sandbox-result-banner">{enableResult.message}</div>}
           {error && <div className="browser-error-banner">{error}</div>}
         </div>

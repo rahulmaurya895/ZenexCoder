@@ -73,7 +73,7 @@ function realtimeTools() {
   const personaTools = Object.values(PERSONAS).map((persona) => ({
     type: 'function',
     name: `swarm_${persona.id}`,
-    description: `Send the current voice request to ZezenexCoderr ${persona.name}. Use this for code tasks that need the ${persona.name} persona.`,
+    description: `Send the current voice request to ZenexCoder ${persona.name}. Use this for code tasks that need the ${persona.name} persona.`,
     parameters: {
       type: 'object',
       properties: {
@@ -91,7 +91,7 @@ function realtimeTools() {
     {
       type: 'function',
       name: 'run_swarm_agent',
-      description: 'Run a ZezenexCoderr multi-agent swarm. Choose persona architect, coder, qa, or secops when the user asks to delegate work.',
+      description: 'Run a ZenexCoder multi-agent swarm. Choose persona architect, coder, qa, or secops when the user asks to delegate work.',
       parameters: {
         type: 'object',
         properties: {
@@ -113,10 +113,10 @@ function realtimeTools() {
 
 function buildInstructions(extra = '') {
   return [
-    'You are ZezenexCoderr realtime coding voice assistant.',
+    'You are ZenexCoder realtime coding voice assistant.',
     'Speak briefly and naturally while the user is coding.',
     'Use the current editor context silently when the user says things like this line, this file, here, or change it.',
-    'If the user asks for implementation, tests, security review, bug fixing, or deeper analysis, call an appropriate ZezenexCoderr Swarm function.',
+    'If the user asks for implementation, tests, security review, bug fixing, or deeper analysis, call an appropriate ZenexCoder Swarm function.',
     'Do not claim a file was changed unless a tool or the app actually changed it.',
     extra
   ].filter(Boolean).join(' ');
@@ -308,7 +308,7 @@ async function handleFunctionCall(call) {
       ok: true,
       taskId: result.taskId,
       personaId,
-      message: `Started ZezenexCoderr ${persona.name} swarm task in the background.`
+      message: `Started ZenexCoder ${persona.name} swarm task in the background.`
     };
     sendNotice('Voice swarm started', `${persona.name} is working on: ${compactText(task, 120)}`, 'info');
   } catch (error) {
@@ -563,7 +563,7 @@ export async function disconnectRealtimeSession() {
   if (existing) {
     existing.removeAllListeners();
     if (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING) {
-      existing.close(1000, 'ZezenexCoderr voice disconnected');
+      existing.close(1000, 'ZenexCoder voice disconnected');
     } else {
       existing.terminate();
     }

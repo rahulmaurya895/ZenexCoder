@@ -1,5 +1,5 @@
 // d:/zenexCoder/zenexcoder/test/aiServiceTest.js
-// Automated verification script for ZezenexCoderr services and backend endpoints
+// Automated verification script for ZenexCoder services and backend endpoints
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function runVerification() {
   console.log('====================================================');
-  console.log('   ZezenexCoderr Automated Backend Verification Suite   ');
+  console.log('   ZenexCoder Automated Backend Verification Suite   ');
   console.log('====================================================\n');
 
   let passed = 0;
@@ -19,7 +19,7 @@ async function runVerification() {
   // Test 1: Local File I/O
   try {
     const testFile = path.join(__dirname, 'temp_test.txt');
-    const testData = `ZezenexCoderr test verification - ${new Date().toISOString()}`;
+    const testData = `ZenexCoder test verification - ${new Date().toISOString()}`;
     await fs.writeFile(testFile, testData, 'utf-8');
     const readData = await fs.readFile(testFile, 'utf-8');
     await fs.unlink(testFile);

@@ -138,7 +138,7 @@ async function protectGitState(projectPath, liveDeploy) {
   }
   emitLog('git', `Captured rollback ref ${info.head.slice(0, 10)}.`);
   if (liveDeploy && info.dirty) {
-    const message = `ZezenexCoderr CI/CD autostash ${new Date().toISOString()}`;
+    const message = `ZenexCoder CI/CD autostash ${new Date().toISOString()}`;
     await run('git', ['stash', 'push', '-u', '-m', message], { cwd: projectPath, timeoutMs: 60000 });
     emitLog('git', 'Dirty working tree stashed before live deploy.');
     return { ...info, stashed: true, stashMessage: message };

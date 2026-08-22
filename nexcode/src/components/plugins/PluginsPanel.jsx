@@ -85,7 +85,7 @@ export default function PluginsPanel() {
   async function exportPdf() {
     const session = sessions.find((item) => item.id === activeSessionId);
     await window.zenexcoder.export.chatPdf({
-      title: session?.title || 'ZezenexCoderr Chat',
+      title: session?.title || 'ZenexCoder Chat',
       messages
     });
   }

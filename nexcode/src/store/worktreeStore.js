@@ -47,7 +47,7 @@ export const useWorktreeStore = create((set, get) => ({
     await get().refresh(projectPath);
     return result;
   },
-  async openInZezenexCoderr(worktreePath) {
+  async openInZenexCoder(worktreePath) {
     if (!worktreePath) return null;
     // TODO: Phase 2B Part 9 may allow opening this in a separate popout window instead of switching the current window.
     const opened = await useProjectStore.getState().openProject(worktreePath);

@@ -1,6 +1,6 @@
-# ZezenexCoderr
+# ZenexCoder
 
-ZezenexCoderr is a local-first AI developer desktop app built with Electron, React, Vite, Monaco, xterm.js, SQLite, and streaming model providers.
+ZenexCoder is a local-first AI developer desktop app built with Electron, React, Vite, Monaco, xterm.js, SQLite, and streaming model providers.
 
 ## Providers
 

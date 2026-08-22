@@ -10,8 +10,8 @@ import {
 } from './localServerHandler.js';
 
 const VALID_GIT_HOOKS = new Set(['pre-commit', 'pre-push']);
-const ZENEXCODER_BEGIN = '# >>> ZezenexCoderr managed hook >>>';
-const ZENEXCODER_END = '# <<< ZezenexCoderr managed hook <<<';
+const ZENEXCODER_BEGIN = '# >>> ZenexCoder managed hook >>>';
+const ZENEXCODER_END = '# <<< ZenexCoder managed hook <<<';
 const HOOK_STORE_FILE = 'hooks.json';
 
 let hooksCache = null;
@@ -91,7 +91,7 @@ function hookScript(projectPath, hookType) {
   const hook = shellEscapeSingle(hookType);
   return `#!/bin/sh
 ${ZENEXCODER_BEGIN}
-# This hook is managed by ZezenexCoderr. If ZezenexCoderr is not running, it fails open.
+# This hook is managed by ZenexCoder. If ZenexCoder is not running, it fails open.
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT_FILE="$HOOK_DIR/../.zenexcoder-port"
 if [ ! -f "$PORT_FILE" ]; then
@@ -114,7 +114,7 @@ if [ "$CURL_STATUS" -ne 0 ]; then
   exit 0
 fi
 if [ "$HTTP_CODE" = "400" ]; then
-  echo "ZezenexCoderr blocked ${hookType}."
+  echo "ZenexCoder blocked ${hookType}."
   exit 1
 fi
 exit 0
@@ -125,7 +125,7 @@ ${ZENEXCODER_END}
 async function writePortFile(projectPath) {
   const gitDir = await resolveGitDir(projectPath);
   const port = getHookServerPort();
-  if (!port) throw new Error('ZezenexCoderr hook server is not running.');
+  if (!port) throw new Error('ZenexCoder hook server is not running.');
   await fs.writeFile(path.join(gitDir, '.zenexcoder-port'), String(port), 'utf8');
   return { gitDir, port };
 }
@@ -159,7 +159,7 @@ async function removeGitHook(projectPath, hookType) {
 
   const existing = await fs.readFile(hookPath, 'utf8').catch(() => '');
   if (!existing.includes(ZENEXCODER_BEGIN)) {
-    return { ok: false, message: 'Hook is not managed by ZezenexCoderr.' };
+    return { ok: false, message: 'Hook is not managed by ZenexCoder.' };
   }
   if (await exists(backupPath)) {
     await fs.copyFile(backupPath, hookPath);

@@ -139,7 +139,7 @@ async function pairRequest(ws, message = {}) {
     publicKey: keyPair.publicKey,
     serverNonce
   });
-  notify('ZezenexCoderr cluster pairing', `${peer.peerHostname} is trying to connect. PIN: ${pin}`, 'warning');
+  notify('ZenexCoder cluster pairing', `${peer.peerHostname} is trying to connect. PIN: ${pin}`, 'warning');
   sendToAll('cluster:pair-request', {
     nodeId: peer.peerNodeId,
     hostname: peer.peerHostname,

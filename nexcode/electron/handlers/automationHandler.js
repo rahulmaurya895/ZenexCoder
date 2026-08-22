@@ -91,7 +91,7 @@ export async function dispatchN8nWebhook(payload = {}) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'User-Agent': 'ZezenexCoderr-Swarm-Architect/2.0'
+    'User-Agent': 'ZenexCoder-Swarm-Architect/2.0'
   };
 
   if (config.authHeader && config.authToken) {
@@ -99,7 +99,7 @@ export async function dispatchN8nWebhook(payload = {}) {
   }
 
   const requestBody = {
-    source: 'ZezenexCoderr Swarm Architect',
+    source: 'ZenexCoder Swarm Architect',
     timestamp: new Date().toISOString(),
     executionId: payload.executionId || `n8n-exec-${crypto.randomUUID()}`,
     task: payload.task || 'Cloud Automation Trigger',

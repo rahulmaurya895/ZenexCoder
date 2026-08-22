@@ -114,7 +114,7 @@ export function registerDiscoveredNode(service = {}) {
   if (!ip || !service.port) return null;
   return upsertNode({
     nodeId,
-    hostname: txt.hostname || service.name?.replace(/^ZezenexCoderr-Node-/, '') || service.host || ip,
+    hostname: txt.hostname || service.name?.replace(/^ZenexCoder-Node-/, '') || service.host || ip,
     ip,
     port: Number(service.port),
     platform: txt.platform || '',

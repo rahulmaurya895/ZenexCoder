@@ -59,7 +59,7 @@ const BROWSER_TOOLS = [
   },
   {
     name: 'browser_navigate',
-    description: 'Open a URL in ZezenexCoderr managed Chromium and wait for page DOM to load. Note: For Google Gemini AI, use "https://gemini.google.com/app" (do NOT use gemini.com which is a crypto exchange).',
+    description: 'Open a URL in ZenexCoder managed Chromium and wait for page DOM to load. Note: For Google Gemini AI, use "https://gemini.google.com/app" (do NOT use gemini.com which is a crypto exchange).',
     schema: {
       type: 'object',
       properties: {
@@ -300,7 +300,7 @@ function toolSystemContext(mcpToolCount = 0, includeBrowser = false, includeComp
     sections.push([
       'You have access to external tools via the Model Context Protocol (MCP).',
       'Tool names are prefixed with their server ID. Use them when necessary.',
-      'Before a tool executes, ZezenexCoderr may ask the user for approval.'
+      'Before a tool executes, ZenexCoder may ask the user for approval.'
     ].join(' '));
   }
   if (includeBrowser) {

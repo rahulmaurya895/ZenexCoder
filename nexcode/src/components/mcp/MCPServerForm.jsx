@@ -171,7 +171,7 @@ export default function MCPServerForm({ server, onSubmit, onCancel }) {
       </div>
       <label className="mcp-checkbox-row">
         <input type="checkbox" checked={autoStart} onChange={(event) => setAutoStart(event.target.checked)} />
-        Auto-start when ZezenexCoderr launches
+        Auto-start when ZenexCoder launches
       </label>
       {invalidEnv && <div className="error-text">Environment keys must use uppercase letters, digits, and underscores.</div>}
       <div className="chat-input-actions">

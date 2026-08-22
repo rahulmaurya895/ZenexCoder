@@ -14,7 +14,7 @@ function inferType(payload = {}) {
 function normalizeNotification(payload = {}) {
   return {
     id: payload.id || `note-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    title: payload.title || 'ZezenexCoderr',
+    title: payload.title || 'ZenexCoder',
     message: payload.message || payload.body || '',
     type: inferType(payload),
     timestamp: payload.timestamp || Date.now(),

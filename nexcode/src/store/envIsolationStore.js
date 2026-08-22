@@ -5,7 +5,7 @@ const defaultState = {
   running: false,
   projectPath: '',
   bridgeDir: '',
-  sandboxProjectPath: 'C:\\ZezenexCoderrProject',
+  sandboxProjectPath: 'C:\\ZenexCoderProject',
   lastWsbPath: '',
   lastError: '',
   feature: {

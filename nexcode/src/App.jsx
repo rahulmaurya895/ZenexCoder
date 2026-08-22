@@ -70,7 +70,7 @@ class StartupErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('ZezenexCoderr renderer crashed', error, info);
+    console.error('ZenexCoder renderer crashed', error, info);
   }
 
   render() {
@@ -120,7 +120,7 @@ function WelcomeScreen({ onDone }) {
     <div className="welcome">
       <div className="welcome-flow">
         <div>
-          <h1>ZezenexCoderr</h1>
+          <h1>ZenexCoder</h1>
           <p>Local-first AI developer environment with code, vision, terminal, and multi-model support.</p>
         </div>
         <div className="welcome-options">
@@ -368,7 +368,7 @@ function MainApp() {
       <TopBar />
       {showFullAccessBanner && (
         <div className="full-access-banner">
-          Full access enabled - ZezenexCoderr can modify files and run commands without asking.
+          Full access enabled - ZenexCoder can modify files and run commands without asking.
           <button className="icon-button" onClick={dismissFullAccessBanner} title="Dismiss full access warning">
             <X size={12} />
           </button>

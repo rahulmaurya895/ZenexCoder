@@ -23,7 +23,7 @@ function consensusMessage(payload = {}) {
     '### 📁 Saved Project Files:',
     fileList,
     '',
-    '### 🧪 How to Test in ZezenexCoderr:',
+    '### 🧪 How to Test in ZenexCoder:',
     '1. Open your saved files directly from the left **File Tree**.',
     '2. Open **Terminal** (`Ctrl+\``) to execute scripts or launch dev server.',
     '3. Review full turn details in the **Agent Run** panel.'

@@ -164,7 +164,7 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
             submit();
           }
         }}
-        placeholder="Ask ZezenexCoderr. Use @filename for open files."
+        placeholder="Ask ZenexCoder. Use @filename for open files."
       />
       <div className="chat-input-actions">
         <button className="icon-button" onClick={addFileAttachment} title="Attach file">

@@ -43,7 +43,7 @@ function FatalOverlay() {
       }}
     >
       <div style={{ maxWidth: '800px', margin: '0 auto', background: '#1e293b', border: '1px solid #ef4444', borderRadius: '12px', padding: '24px' }}>
-        <h1 style={{ color: '#ef4444', marginTop: 0, fontSize: '20px' }}>⚠️ ZezenexCoderr Renderer Error</h1>
+        <h1 style={{ color: '#ef4444', marginTop: 0, fontSize: '20px' }}>⚠️ ZenexCoder Renderer Error</h1>
         <p style={{ color: '#94a3b8', fontSize: '14px' }}>A runtime error occurred in the renderer process. Details are shown below:</p>
         <pre style={{ background: '#090d16', color: '#f87171', padding: '16px', borderRadius: '8px', overflowX: 'auto', fontSize: '12px', lineHeight: 1.5 }}>
           {error}

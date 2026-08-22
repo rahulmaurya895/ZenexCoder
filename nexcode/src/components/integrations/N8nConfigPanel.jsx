@@ -46,7 +46,7 @@ export default function N8nConfigPanel() {
     setStatus({ status: 'sending', message: 'Firing test webhook payload...' });
     try {
       const res = await window.zenexcoder.n8n.triggerWebhook({
-        task: 'Connection Test from ZezenexCoderr Connections Hub',
+        task: 'Connection Test from ZenexCoder Connections Hub',
         params: { test: true, triggeredBy: 'N8nConfigPanel' }
       });
       setStatus({ status: 'success', message: `Webhook HTTP 200 OK Response from ${res.url}` });
@@ -63,7 +63,7 @@ export default function N8nConfigPanel() {
         <Workflow size={18} className="text-accent" /> n8n External Cloud Automations
       </div>
       <p className="section-description">
-        Connect ZezenexCoderr Swarm Architect to your n8n cloud workspace to trigger CI/CD pipelines and administrative workflows via webhooks.
+        Connect ZenexCoder Swarm Architect to your n8n cloud workspace to trigger CI/CD pipelines and administrative workflows via webhooks.
       </p>
 
       <div className="form-group">

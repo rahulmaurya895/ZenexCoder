@@ -21,15 +21,11 @@ const CLOUD_MODELS = {
     { id: 'claude-3-haiku-20240307', name: 'Claude Haiku' }
   ],
   google: [
-    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Latest Flagship)' },
-    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash' },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite' },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Recommended)' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Fast)' },
     { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' }
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
   ],
   groq: [
     { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Recommended)' },

@@ -37,9 +37,9 @@ export function abortAllAiStreams(reason = 'Generation aborted.') {
 }
 
 const DEFAULT_MODELS = {
-  openai: 'gpt-4o-mini',
+  openai: 'gpt-4o',
   anthropic: 'claude-3-5-sonnet-latest',
-  google: 'gemini-3.6-flash',
+  google: 'gemini-2.0-flash',
   groq: 'llama-3.3-70b-versatile',
   ollama: 'llama3.2:3b'
 };

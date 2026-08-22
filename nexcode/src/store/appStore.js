@@ -12,7 +12,7 @@ export const useAppStore = create((set) => ({
   pendingReviewCount: 0,
   fullAccessBannerDismissed: false,
   activePanel: 'split',
-  activeModel: { provider: 'google', modelId: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash (Latest Flagship)' },
+  activeModel: { provider: 'google', modelId: 'gemini-2.0-flash', modelName: 'Gemini 2.0 Flash (Recommended)' },
   isStreaming: false,
   streamingAbort: null,
   lastResponseMs: null,

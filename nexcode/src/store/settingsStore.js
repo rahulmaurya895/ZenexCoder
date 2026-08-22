@@ -4,9 +4,9 @@ import { SYSTEM_PROMPTS } from '@/utils/promptTemplates';
 const defaultSettings = {
   apiKeys: { openai: '', anthropic: '', google: '', groq: '' },
   defaultModels: {
-    coding: { provider: 'google', modelId: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash (Latest Flagship)' },
-    chat: { provider: 'google', modelId: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash (Latest Flagship)' },
-    vision: { provider: 'google', modelId: 'gemini-3.6-flash', modelName: 'Gemini 3.6 Flash (Latest Flagship)' }
+    coding: { provider: 'google', modelId: 'gemini-2.0-flash', modelName: 'Gemini 2.0 Flash (Recommended)' },
+    chat: { provider: 'google', modelId: 'gemini-2.0-flash', modelName: 'Gemini 2.0 Flash (Recommended)' },
+    vision: { provider: 'google', modelId: 'gemini-2.0-flash', modelName: 'Gemini 2.0 Flash (Recommended)' }
   },
   editorSettings: {
     fontSize: 13,

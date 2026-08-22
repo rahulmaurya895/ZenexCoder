@@ -14,6 +14,30 @@ const IGNORED = new Set([
   '.cache'
 ]);
 
+const PROTECTED_SYSTEM_PATHS = [
+  /^[a-z]:\\windows/i,
+  /system32/i,
+  /drivers\\etc\\hosts/i,
+  /^(?:[a-z]:)?[\\\/]etc[\\\/](?:hosts|passwd|shadow|sudoers)/i,
+  /^(?:[a-z]:)?[\\\/](?:boot|proc|sys|root|dev)(?:[\\\/]|$)/i,
+  /ntuser\.dat/i
+];
+
+export function validateSafePath(targetPath = '') {
+  if (!targetPath || typeof targetPath !== 'string') {
+    throw new Error('Invalid file path provided.');
+  }
+  const resolved = path.resolve(targetPath);
+  const normalized = resolved.toLowerCase();
+
+  for (const pattern of PROTECTED_SYSTEM_PATHS) {
+    if (pattern.test(normalized)) {
+      throw new Error(`Security Policy Violation: Path Traversal blocked. Access or modification to protected OS directory / system file (${path.basename(resolved)}) is strictly prohibited.`);
+    }
+  }
+  return resolved;
+}
+
 async function exists(filePath) {
   try {
     await fs.access(filePath);
@@ -24,13 +48,14 @@ async function exists(filePath) {
 }
 
 async function readTree(dirPath, depth = 0) {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  const safeDir = validateSafePath(dirPath);
+  const entries = await fs.readdir(safeDir, { withFileTypes: true });
   const nodes = [];
   for (const entry of entries.sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name))) {
     if (IGNORED.has(entry.name)) {
       continue;
     }
-    const fullPath = path.join(dirPath, entry.name);
+    const fullPath = path.join(safeDir, entry.name);
     const stat = await fs.stat(fullPath);
     const node = {
       id: fullPath,
@@ -57,8 +82,9 @@ function sendToAll(channel, payload) {
 
 export function registerFileHandlers() {
   ipcMain.handle('file:read', async (_event, payload) => {
-    const filePath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
-    if (!filePath) throw new Error('No valid file path provided for reading.');
+    const rawPath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
+    if (!rawPath) throw new Error('No valid file path provided for reading.');
+    const filePath = validateSafePath(rawPath);
     try {
       const stat = await fs.stat(filePath);
       if (stat.size > 1024 * 1024 * 5) {
@@ -80,9 +106,10 @@ export function registerFileHandlers() {
   });
 
   ipcMain.handle('file:write', async (_event, payload = {}) => {
-    const filePath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
+    const rawPath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
     const content = typeof payload === 'object' ? payload?.content ?? '' : '';
-    if (!filePath) throw new Error('No valid file path provided for writing.');
+    if (!rawPath) throw new Error('No valid file path provided for writing.');
+    const filePath = validateSafePath(rawPath);
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, content, 'utf8');
@@ -99,11 +126,12 @@ export function registerFileHandlers() {
   });
 
   ipcMain.handle('file:patch', async (_event, payload = {}) => {
-    const filePath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
+    const rawPath = typeof payload === 'string' ? payload : payload?.filePath || payload?.path || '';
     const searchTarget = payload.searchTarget || payload.search || '';
     const replacementContent = payload.replacementContent || payload.replace || '';
 
-    if (!filePath) throw new Error('No valid file path provided for patching.');
+    if (!rawPath) throw new Error('No valid file path provided for patching.');
+    const filePath = validateSafePath(rawPath);
     try {
       const original = await fs.readFile(filePath, 'utf8');
       if (searchTarget && !original.includes(searchTarget)) {
@@ -120,20 +148,22 @@ export function registerFileHandlers() {
   });
 
   ipcMain.handle('file:rename', async (_event, payload = {}) => {
-
     try {
-      if (await exists(payload.newPath)) {
+      const oldPath = validateSafePath(payload.oldPath);
+      const newPath = validateSafePath(payload.newPath);
+      if (await exists(newPath)) {
         throw new Error('Target path already exists.');
       }
-      await fs.rename(payload.oldPath, payload.newPath);
-      return { ok: true, oldPath: payload.oldPath, newPath: payload.newPath };
+      await fs.rename(oldPath, newPath);
+      return { ok: true, oldPath, newPath };
     } catch (error) {
       throw new Error(`Unable to rename file: ${error.message}`);
     }
   });
 
-  ipcMain.handle('file:delete', async (_event, filePath) => {
+  ipcMain.handle('file:delete', async (_event, rawPath) => {
     try {
+      const filePath = validateSafePath(rawPath);
       const stat = await fs.stat(filePath);
       await fs.rm(filePath, { recursive: stat.isDirectory(), force: true });
       return { ok: true, filePath };
@@ -142,8 +172,9 @@ export function registerFileHandlers() {
     }
   });
 
-  ipcMain.handle('file:stat', async (_event, filePath) => {
+  ipcMain.handle('file:stat', async (_event, rawPath) => {
     try {
+      const filePath = validateSafePath(rawPath);
       const stat = await fs.stat(filePath);
       return {
         filePath,

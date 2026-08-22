@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { buildProjectEnvironment } from './environmentHandler.js';
 import { sandboxIsEnabled, sandboxRunCommand } from './sandboxHandler.js';
+import { enforcePolicies } from './policyEnforcer.js';
 
 const terminals = new Map();
 let selectedShellPath = '';
@@ -114,6 +115,11 @@ export function registerTerminalHandlers() {
     const command = payload.command;
     if (!command) {
       throw new Error('No terminal command provided.');
+    }
+
+    const policy = enforcePolicies(command);
+    if (!policy.ok) {
+      throw new Error(policy.message);
     }
 
     try {

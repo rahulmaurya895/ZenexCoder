@@ -18,6 +18,17 @@ const SYSTEM_DESTRUCTION_PATTERNS = [
   /shutdown\s+[\/-][srf]/i
 ];
 
+const COMMAND_INJECTION_PATTERNS = [
+  /Invoke-WebRequest.*-Uri.*(?:\.exe|\.bat|\.vbs|\.ps1|malware)/i,
+  /curl.*(?:-o|-O).*(?:\.exe|\.bat|\.vbs|\.ps1)/i,
+  /wget.*-O.*(?:\.exe|\.bat|\.vbs|\.ps1)/i,
+  /certutil.*-urlcache/i,
+  /bitsadmin.*\/transfer/i,
+  /powershell.*DownloadFile/i,
+  /powershell.*DownloadString/i,
+  /Start-Process.*(?:\.exe|\.bat|\.vbs|temp)/i
+];
+
 export function enforcePolicies(text = '') {
   const content = String(text || '');
   
@@ -28,6 +39,17 @@ export function enforcePolicies(text = '') {
         ok: false,
         rule: 'system_destruction_blocked',
         message: 'Security Policy Violation: Malicious or destructive OS command detected. Actions targeting System directories (System32, Root, Format) are strictly blocked.'
+      };
+    }
+  }
+
+  // Check for Malicious Binary Downloads & Command Injections
+  for (const pattern of COMMAND_INJECTION_PATTERNS) {
+    if (pattern.test(content)) {
+      return {
+        ok: false,
+        rule: 'command_injection_blocked',
+        message: 'Security Policy Violation: Unauthorized binary download/execution or chained shell injection detected. Action strictly blocked.'
       };
     }
   }

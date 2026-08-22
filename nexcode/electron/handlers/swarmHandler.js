@@ -153,23 +153,42 @@ export function parseHandoff(text = '') {
   for (const candidate of extractJsonCandidates(text)) {
     const parsed = repairJson(candidate);
     if (!parsed || typeof parsed !== 'object') continue;
-    const handoffTo = normalizeHandoffTarget(parsed.handoff_to || parsed.handoffTo || parsed.next || parsed.next_agent);
-    if (!SWARM_HANDOFF_TARGETS.includes(handoffTo)) continue;
-    return {
-      ...parsed,
-      analysis: typeof parsed.analysis === 'string' ? parsed.analysis : compactText(parsed.analysis || ''),
-      instructions: typeof parsed.instructions === 'string' ? parsed.instructions : compactText(parsed.instructions || ''),
-      handoff_to: handoffTo
-    };
+    let handoffTo = normalizeHandoffTarget(parsed.handoff_to || parsed.handoffTo || parsed.next || parsed.next_agent || parsed.handoff?.handoff_to);
+
+    // Intelligently infer target if model omitted explicit handoff_to key
+    if (!handoffTo) {
+      if (parsed.project_structure || parsed.state_management || parsed.routing || parsed.architecture || parsed.components) {
+        handoffTo = 'coder';
+      } else if (parsed.files?.length || parsed.execution_plan?.steps?.length || parsed.code) {
+        handoffTo = 'qa';
+      } else if (parsed.tests || parsed.checks || parsed.verification) {
+        handoffTo = 'secops';
+      } else if (parsed.security_review || parsed.security || parsed.approval) {
+        handoffTo = 'user_approval';
+      } else {
+        handoffTo = 'coder';
+      }
+    }
+
+    if (SWARM_HANDOFF_TARGETS.includes(handoffTo)) {
+      return {
+        ...parsed,
+        analysis: typeof parsed.analysis === 'string' ? parsed.analysis : compactText(parsed.analysis || parsed.summary || parsed.description || (typeof parsed === 'object' ? JSON.stringify(parsed) : ''), 4000),
+        instructions: typeof parsed.instructions === 'string' ? parsed.instructions : compactText(parsed.instructions || parsed.delivery || parsed.next_steps || 'Proceed with next phase.', 2000),
+        handoff_to: handoffTo
+      };
+    }
   }
 
   if (text.trim()) {
     const lower = text.toLowerCase();
-    let handoffTo = 'qa';
+    let handoffTo = 'coder';
     if (lower.includes('user_approval') || lower.includes('approve') || lower.includes('ready for approval') || lower.includes('final review')) {
       handoffTo = 'user_approval';
     } else if (lower.includes('secops') || lower.includes('security')) {
       handoffTo = 'secops';
+    } else if (lower.includes('qa') || lower.includes('test')) {
+      handoffTo = 'qa';
     } else if (lower.includes('coder') || lower.includes('developer') || lower.includes('fix')) {
       handoffTo = 'coder';
     }
@@ -368,25 +387,38 @@ async function callModelWithRetry(payload, signal) {
   let lastError;
   for (let i = 0; i < providersToTry.length; i += 1) {
     const candidate = providersToTry[i];
-    try {
-      const activePayload = { ...payload, provider: candidate.provider, apiKey: candidate.apiKey, modelId: candidate.modelId || payload.modelId };
-      return await callModel(activePayload, signal);
-    } catch (err) {
-      lastError = err;
-      if (signal?.aborted) throw err;
+    // Retry up to 3 times on transient network glitches
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const activePayload = { ...payload, provider: candidate.provider, apiKey: candidate.apiKey, modelId: candidate.modelId || payload.modelId };
+        return await callModel(activePayload, signal);
+      } catch (err) {
+        lastError = err;
+        if (signal?.aborted) throw err;
 
-      const isRateLimit = /429|RESOURCE_EXHAUSTED|quota|rate limit|rate_limit_exceeded|tokens per minute|Limit \d+/i.test(err.message);
-      const hasNext = i < providersToTry.length - 1;
+        const isRateLimit = /429|RESOURCE_EXHAUSTED|quota|rate limit|rate_limit_exceeded|tokens per minute|Limit \d+/i.test(err.message);
+        const isNetworkGlitch = /fetch failed|ECONNRESET|ETIMEDOUT|socket hang up|network error/i.test(err.message);
 
-      if (isRateLimit && hasNext) {
-        const nextProvider = providersToTry[i + 1].provider;
-        console.warn(`[Swarm Auto-Fallback] Provider ${candidate.provider} rate-limited. Instantly switching to ${nextProvider} (0ms pause)...`);
-        notify('Provider Auto-Switch', `Switched from ${candidate.provider} to ${nextProvider} instantly to avoid rate-limit pause.`, 'info');
-        continue;
+        if (isRateLimit) {
+          // Switch to next provider immediately on 429
+          break;
+        }
+
+        if (isNetworkGlitch && attempt < 2) {
+          console.warn(`[Swarm Network Retry] ${candidate.provider} fetch failed (attempt ${attempt + 1}/3). Retrying in 1s...`);
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        }
+        break;
       }
-      if (hasNext && !String(err.message || '').includes('Settings')) {
-        continue;
-      }
+    }
+
+    const hasNext = i < providersToTry.length - 1;
+    if (hasNext) {
+      const nextProvider = providersToTry[i + 1].provider;
+      console.warn(`[Swarm Auto-Fallback] Switching from ${candidate.provider} to ${nextProvider}...`);
+      notify('Provider Auto-Switch', `Switched from ${candidate.provider} to ${nextProvider} to continue Swarm workflow.`, 'info');
+      continue;
     }
   }
   throw lastError || new Error('All candidate Swarm AI models failed.');

@@ -208,7 +208,8 @@ function createWindow() {
     minHeight: 700,
     title: 'ZenexCoder',
     backgroundColor: '#0d0d0d',
-    show: false,
+    show: true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
@@ -219,6 +220,7 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    mainWindow.focus();
   });
 
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
@@ -226,6 +228,9 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
+
+  mainWindow.show();
+  mainWindow.focus();
 
   mainWindow.on('closed', () => {
     mainWindow = null;

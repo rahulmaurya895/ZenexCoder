@@ -29,8 +29,8 @@ export const useHybridCloudStore = create((set, get) => ({
   async loadConfig() {
     set({ loading: true });
     try {
-      if (typeof window !== 'undefined' && window.nexcode?.store) {
-        const saved = await window.nexcode.store.get('hybrid_cloud_config', defaultHybridConfig);
+      if (typeof window !== 'undefined' && window.zenexcoder?.store) {
+        const saved = await window.zenexcoder.store.get('hybrid_cloud_config', defaultHybridConfig);
         set({ ...defaultHybridConfig, ...saved, loading: false });
       }
     } catch {
@@ -42,8 +42,8 @@ export const useHybridCloudStore = create((set, get) => ({
     const nextState = { ...get(), ...patch };
     set(patch);
     try {
-      if (typeof window !== 'undefined' && window.nexcode?.store) {
-        await window.nexcode.store.set('hybrid_cloud_config', {
+      if (typeof window !== 'undefined' && window.zenexcoder?.store) {
+        await window.zenexcoder.store.set('hybrid_cloud_config', {
           enabled: nextState.enabled,
           instanceIp: nextState.instanceIp,
           sshPort: nextState.sshPort,

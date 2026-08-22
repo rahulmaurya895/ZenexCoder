@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { listIncidents, upsertIncident } from '../database.js';
 import { startAutoFix, takeOverAutoFix } from './autoFixer.js';
 
-const STORE_FILE = 'nexcode-incidents.json';
+const STORE_FILE = 'zenexcoder-incidents.json';
 const DEFAULT_SETTINGS = {
   pollingEnabled: false,
   autoHealEnabled: false,

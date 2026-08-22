@@ -6,7 +6,7 @@ import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const STORE_NAME = 'nexcode-mcp.json';
+const STORE_NAME = 'zenexcoder-mcp.json';
 const STATUS_DISCONNECTED = 'disconnected';
 const STATUS_CONNECTING = 'connecting';
 const STATUS_CONNECTED = 'connected';
@@ -40,7 +40,7 @@ function storePath() {
 function fallbackKey() {
   return crypto
     .createHash('sha256')
-    .update(`nexcode-mcp:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
+    .update(`zenexcoder-mcp:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
     .digest();
 }
 
@@ -304,7 +304,7 @@ export async function mcpConnect(id) {
   setState(id, { status: STATUS_CONNECTING, error: '', tools: [], resources: [], resourceTemplates: [] });
 
   const client = new Client(
-    { name: 'NexCode', version: app.getVersion?.() || '1.0.0' },
+    { name: 'ZezenexCoderr', version: app.getVersion?.() || '1.0.0' },
     { capabilities: {} }
   );
   const transport = new StdioClientTransport({

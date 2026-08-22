@@ -13,7 +13,7 @@ const defaults = {
 export const usePermissionsStore = create((set, get) => ({
   ...defaults,
   async load() {
-    const saved = await window.nexcode.store.get('permissions', defaults);
+    const saved = await window.zenexcoder.store.get('permissions', defaults);
     // Upgrade profiles created before the broad-access policy. A later user
     // selection is persisted and is never overwritten.
     const needsAccessUpgrade = !saved?.accessPolicyVersion;
@@ -34,7 +34,7 @@ export const usePermissionsStore = create((set, get) => ({
       showSystemNotifications: next.showSystemNotifications,
       accessPolicyVersion: defaults.accessPolicyVersion
     };
-    await window.nexcode.store.set('permissions', serializable);
+    await window.zenexcoder.store.set('permissions', serializable);
     set(patch);
   },
   async setMode(mode) {

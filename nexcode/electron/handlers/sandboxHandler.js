@@ -10,7 +10,7 @@ const state = {
   running: false,
   projectPath: '',
   bridgeDir: '',
-  sandboxProjectPath: 'C:\\NexCodeProject',
+  sandboxProjectPath: 'C:\\ZezenexCoderrProject',
   lastWsbPath: '',
   lastError: ''
 };
@@ -32,7 +32,7 @@ function escapeXml(value = '') {
 
 function listenerScript() {
   return `$ErrorActionPreference = "Continue"
-$Bridge = "C:\\NexCodeProject\\.nexcode-sandbox"
+$Bridge = "C:\\ZezenexCoderrProject\\.zenexcoder-sandbox"
 $Commands = Join-Path $Bridge "commands"
 $Results = Join-Path $Bridge "results"
 New-Item -ItemType Directory -Force -Path $Commands | Out-Null
@@ -43,8 +43,8 @@ while ($true) {
     try {
       $job = Get-Content -Raw -Path $commandFile | ConvertFrom-Json
       Remove-Item -LiteralPath $commandFile -Force -ErrorAction SilentlyContinue
-      $cwd = if ($job.cwd) { $job.cwd } else { "C:\\NexCodeProject" }
-      if (!(Test-Path -LiteralPath $cwd)) { $cwd = "C:\\NexCodeProject" }
+      $cwd = if ($job.cwd) { $job.cwd } else { "C:\\ZezenexCoderrProject" }
+      if (!(Test-Path -LiteralPath $cwd)) { $cwd = "C:\\ZezenexCoderrProject" }
       Push-Location $cwd
       $output = ""
       $exitCode = 0
@@ -89,7 +89,7 @@ function wsbXml(projectPath) {
     </MappedFolder>
   </MappedFolders>
   <LogonCommand>
-    <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${state.sandboxProjectPath}\\.nexcode-sandbox\\listener.ps1"</Command>
+    <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${state.sandboxProjectPath}\\.zenexcoder-sandbox\\listener.ps1"</Command>
   </LogonCommand>
 </Configuration>`;
 }
@@ -276,7 +276,7 @@ export async function sandboxEnableFeature() {
 }
 
 async function ensureBridge(projectPath) {
-  const bridgeDir = path.join(projectPath, '.nexcode-sandbox');
+  const bridgeDir = path.join(projectPath, '.zenexcoder-sandbox');
   await fs.mkdir(path.join(bridgeDir, 'commands'), { recursive: true });
   await fs.mkdir(path.join(bridgeDir, 'results'), { recursive: true });
   await fs.writeFile(path.join(bridgeDir, 'listener.ps1'), listenerScript(), 'utf8');
@@ -285,7 +285,7 @@ async function ensureBridge(projectPath) {
 
 async function writeSandboxConfig(projectPath) {
   const bridgeDir = await ensureBridge(projectPath);
-  const wsbPath = path.join(app.getPath('temp'), `nexcode-${crypto.createHash('sha1').update(projectPath).digest('hex').slice(0, 10)}.wsb`);
+  const wsbPath = path.join(app.getPath('temp'), `zenexcoder-${crypto.createHash('sha1').update(projectPath).digest('hex').slice(0, 10)}.wsb`);
   await fs.writeFile(wsbPath, wsbXml(projectPath), 'utf8');
   state.projectPath = projectPath;
   state.bridgeDir = bridgeDir;

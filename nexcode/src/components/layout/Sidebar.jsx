@@ -49,9 +49,9 @@ export default function Sidebar({ activeView, onViewChange, onOpenSearch }) {
   ];
 
   useEffect(() => {
-    window.nexcode.review.list('pending_review').then((list) => setPendingReviewCount(list.length)).catch(() => {});
-    const dispose = window.nexcode.review.onUpdate(() => {
-      window.nexcode.review.list('pending_review').then((list) => setPendingReviewCount(list.length)).catch(() => {});
+    window.zenexcoder.review.list('pending_review').then((list) => setPendingReviewCount(list.length)).catch(() => {});
+    const dispose = window.zenexcoder.review.onUpdate(() => {
+      window.zenexcoder.review.list('pending_review').then((list) => setPendingReviewCount(list.length)).catch(() => {});
     });
     return dispose;
   }, [setPendingReviewCount]);
@@ -62,7 +62,7 @@ export default function Sidebar({ activeView, onViewChange, onOpenSearch }) {
         <button className="icon-button" onClick={toggleSidebar} title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>
           {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
         </button>
-        <div className="brand">NexCode</div>
+        <div className="brand">ZezenexCoderr</div>
       </div>
 
       <div className="sidebar-nav">

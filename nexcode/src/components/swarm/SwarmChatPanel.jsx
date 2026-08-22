@@ -105,7 +105,7 @@ export default function SwarmChatPanel() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `nexcode-chat-${Date.now()}.md`;
+    anchor.download = `zenexcoder-chat-${Date.now()}.md`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -116,7 +116,7 @@ export default function SwarmChatPanel() {
     if (activeModel.provider !== 'ollama' && !apiKey) {
       const message = `Add your ${activeModel.provider} API key in Settings before starting a swarm.`;
       await addMessage('system', message);
-      await window.nexcode.notify.show({ title: 'Swarm blocked', body: message, type: 'warning' });
+      await window.zenexcoder.notify.show({ title: 'Swarm blocked', body: message, type: 'warning' });
       return;
     }
 
@@ -147,7 +147,7 @@ export default function SwarmChatPanel() {
       });
     } catch (error) {
       await addMessage('system', `Swarm failed to start: ${error.message}`);
-      await window.nexcode.notify.show({ title: 'Swarm failed', body: error.message, type: 'error' });
+      await window.zenexcoder.notify.show({ title: 'Swarm failed', body: error.message, type: 'error' });
     }
   }
 

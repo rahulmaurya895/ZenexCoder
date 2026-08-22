@@ -1,8 +1,8 @@
 {
-  "name": "nexcode",
+  "name": "zenexcoder",
   "version": "1.0.0",
   "description": "AI-Powered Developer Environment",
-  "author": "NexCode",
+  "author": "ZezenexCoderr",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
@@ -116,10 +116,10 @@
     "vite": "^7.0.0"
   },
   "build": {
-    "appId": "com.nexcode.app",
+    "appId": "com.zenexcoder.app",
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
-    "productName": "NexCode",
+    "productName": "ZezenexCoderr",
     "directories": {
       "output": "dist"
     },

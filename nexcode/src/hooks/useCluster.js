@@ -7,9 +7,9 @@ let disposers = [];
 function ensureListeners() {
   if (!disposers.length) {
     disposers = [
-      window.nexcode.cluster.onNodeFound((node) => useClusterStore.getState().applyNode(node)),
-      window.nexcode.cluster.onStatusUpdate((node) => useClusterStore.getState().applyStatus(node)),
-      window.nexcode.cluster.onStateUpdate((state) => useClusterStore.getState().applyState(state))
+      window.zenexcoder.cluster.onNodeFound((node) => useClusterStore.getState().applyNode(node)),
+      window.zenexcoder.cluster.onStatusUpdate((node) => useClusterStore.getState().applyStatus(node)),
+      window.zenexcoder.cluster.onStateUpdate((state) => useClusterStore.getState().applyState(state))
     ];
   }
   listenerUsers += 1;

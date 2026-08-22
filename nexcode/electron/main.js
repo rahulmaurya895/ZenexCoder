@@ -64,7 +64,7 @@ if (isSafeMode) {
 }
 
 if (isFreshProfile) {
-  app.setPath('userData', path.join(app.getPath('appData'), 'NexCode-TestProfile'));
+  app.setPath('userData', path.join(app.getPath('appData'), 'ZezenexCoderr-TestProfile'));
 }
 
 let mainWindow;
@@ -138,7 +138,7 @@ class JsonStore {
   }
 }
 
-const store = new JsonStore({ name: 'nexcode-settings' });
+const store = new JsonStore({ name: 'zenexcoder-settings' });
 
 function encryptedPayload(value) {
   const serialized = JSON.stringify(value);
@@ -190,7 +190,7 @@ function getPreloadPath() {
     path.join(app.getAppPath(), 'out/preload/index.mjs'),
     path.join(process.cwd(), 'out/preload/preload.mjs'),
     path.join(process.cwd(), 'out/preload/index.mjs'),
-    path.join(process.cwd(), 'nexcode/out/preload/preload.mjs')
+    path.join(process.cwd(), 'zenexcoder/out/preload/preload.mjs')
   ];
   for (const candidate of candidates) {
     if (fsSync.existsSync(candidate)) {
@@ -206,7 +206,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'NexCode',
+    title: 'ZezenexCoderr',
     backgroundColor: '#0d0d0d',
     show: false,
     webPreferences: {
@@ -447,7 +447,7 @@ function registerWindowHandlers() {
 }
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'nexcode', privileges: { standard: true, secure: true } }
+  { scheme: 'zenexcoder', privileges: { standard: true, secure: true } }
 ]);
 
 app.whenReady().then(() => {

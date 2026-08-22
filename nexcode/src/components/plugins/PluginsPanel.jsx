@@ -21,15 +21,15 @@ export default function PluginsPanel() {
   const { streamText } = useAI();
 
   useEffect(() => {
-    window.nexcode.store.get('plugins', { enabled: {}, customPlugins: [] }).then((saved) => {
+    window.zenexcoder.store.get('plugins', { enabled: {}, customPlugins: [] }).then((saved) => {
       setEnabled(saved.enabled || {});
       setCustomPlugins(saved.customPlugins || []);
     });
-    window.nexcode.db.listSnippets().then(setSnippets).catch(() => {});
+    window.zenexcoder.db.listSnippets().then(setSnippets).catch(() => {});
   }, []);
 
   async function persist(nextEnabled = enabled, nextCustom = customPlugins) {
-    await window.nexcode.store.set('plugins', { enabled: nextEnabled, customPlugins: nextCustom });
+    await window.zenexcoder.store.set('plugins', { enabled: nextEnabled, customPlugins: nextCustom });
   }
 
   async function toggle(id) {
@@ -48,7 +48,7 @@ export default function PluginsPanel() {
 
   async function generateCommitMessage() {
     let diff = '';
-    const runner = window.nexcode.terminal.run(
+    const runner = window.zenexcoder.terminal.run(
       { command: 'git', args: ['diff', '--staged'], shell: false, cwd: projectPath || undefined },
       {
         onOutput: (payload) => {
@@ -68,7 +68,7 @@ export default function PluginsPanel() {
   async function commitStagedChanges() {
     if (!commitMessage.trim()) return;
     let output = '';
-    const runner = window.nexcode.terminal.run(
+    const runner = window.zenexcoder.terminal.run(
       { command: 'git', args: ['commit', '-m', commitMessage.trim()], shell: false, cwd: projectPath || undefined },
       {
         onOutput: (payload) => {
@@ -84,8 +84,8 @@ export default function PluginsPanel() {
 
   async function exportPdf() {
     const session = sessions.find((item) => item.id === activeSessionId);
-    await window.nexcode.export.chatPdf({
-      title: session?.title || 'NexCode Chat',
+    await window.zenexcoder.export.chatPdf({
+      title: session?.title || 'ZezenexCoderr Chat',
       messages
     });
   }

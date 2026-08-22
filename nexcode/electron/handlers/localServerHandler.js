@@ -82,7 +82,7 @@ export async function startLocalHookServer() {
         writeJson(response, 200, {
           ok: true,
           status: 'allow',
-          reason: 'NexCode hook timed out; failing open.'
+          reason: 'ZezenexCoderr hook timed out; failing open.'
         });
       }, 180000);
 
@@ -92,7 +92,7 @@ export async function startLocalHookServer() {
       writeJson(response, 200, {
         ok: true,
         status: 'allow',
-        reason: `NexCode hook payload error; failing open: ${error.message}`
+        reason: `ZezenexCoderr hook payload error; failing open: ${error.message}`
       });
     }
   });
@@ -149,7 +149,7 @@ export async function stopLocalHookServer() {
     writeJson(pending.response, 200, {
       ok: true,
       status: 'allow',
-      reason: 'NexCode is shutting down; failing open.'
+      reason: 'ZezenexCoderr is shutting down; failing open.'
     });
     pendingTriggers.delete(triggerId);
   }

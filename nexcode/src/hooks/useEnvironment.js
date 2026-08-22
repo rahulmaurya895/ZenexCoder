@@ -7,9 +7,9 @@ let disposeActive = null;
 
 function ensureEnvListener() {
   if (!disposeActive) {
-    disposeActive = window.nexcode.env.onActiveChanged((payload) => {
+    disposeActive = window.zenexcoder.env.onActiveChanged((payload) => {
       useEnvironmentStore.getState().applyActiveChanged(payload);
-      window.nexcode.notify
+      window.zenexcoder.notify
         .show({ title: 'Environment changed', body: 'Restart terminal sessions to apply.' })
         .catch(() => {});
     });

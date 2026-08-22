@@ -93,12 +93,12 @@ export default function IncidentCard({ incident, onStartHealing, onTakeOver }) {
 
       <div className="incident-actions">
         {incident.url ? (
-          <button type="button" onClick={() => window.nexcode.app.openExternal(incident.url)}>
+          <button type="button" onClick={() => window.zenexcoder.app.openExternal(incident.url)}>
             <ExternalLink size={14} /> View on Sentry
           </button>
         ) : null}
         {incident.prUrl ? (
-          <button type="button" className="primary-button" onClick={() => window.nexcode.app.openExternal(incident.prUrl)}>
+          <button type="button" className="primary-button" onClick={() => window.zenexcoder.app.openExternal(incident.prUrl)}>
             <GitPullRequest size={14} /> View PR
           </button>
         ) : null}

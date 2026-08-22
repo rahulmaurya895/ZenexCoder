@@ -48,7 +48,7 @@ export default function RuntimeSelector({ env, projectPath, store }) {
   }
 
   async function browse(runtime) {
-    const [filePath] = await window.nexcode.file.openDialog();
+    const [filePath] = await window.zenexcoder.file.openDialog();
     if (filePath) await updateRuntime(runtime, { mode: 'path', resolvedPath: filePath });
   }
 

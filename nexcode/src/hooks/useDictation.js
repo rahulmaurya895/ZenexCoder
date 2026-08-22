@@ -23,7 +23,7 @@ export function useDictation({ language = 'en-US', onFinalTranscript } = {}) {
     if (!SpeechRecognition) {
       const message = 'Voice input is not available in this Chromium build.';
       setError(message);
-      window.nexcode?.notify?.show?.({ title: 'Dictation unavailable', body: message, type: 'warning' }).catch(() => {});
+      window.zenexcoder?.notify?.show?.({ title: 'Dictation unavailable', body: message, type: 'warning' }).catch(() => {});
       return false;
     }
 
@@ -40,7 +40,7 @@ export function useDictation({ language = 'en-US', onFinalTranscript } = {}) {
       recognition.onerror = (event) => {
         const message = event?.error ? `Dictation error: ${event.error}` : 'Dictation failed.';
         setError(message);
-        window.nexcode?.notify?.show?.({ title: 'Dictation error', body: message, type: 'error' }).catch(() => {});
+        window.zenexcoder?.notify?.show?.({ title: 'Dictation error', body: message, type: 'error' }).catch(() => {});
       };
       recognition.onresult = (event) => {
         let interim = '';
@@ -72,7 +72,7 @@ export function useDictation({ language = 'en-US', onFinalTranscript } = {}) {
       const message = err?.message || 'Unable to start dictation.';
       setError(message);
       setIsListening(false);
-      window.nexcode?.notify?.show?.({ title: 'Dictation error', body: message, type: 'error' }).catch(() => {});
+      window.zenexcoder?.notify?.show?.({ title: 'Dictation error', body: message, type: 'error' }).catch(() => {});
       return false;
     }
   }, [language, onFinalTranscript]);

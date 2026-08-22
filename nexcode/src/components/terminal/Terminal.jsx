@@ -42,11 +42,11 @@ export default function Terminal() {
     const cols = Math.max(20, term.cols || 80);
     const rows = Math.max(5, term.rows || 24);
 
-    window.nexcode.terminal
+    window.zenexcoder.terminal
       .create({ cwd: projectPath || undefined, cols, rows })
       .then((session) => {
         if (disposed) {
-          window.nexcode.terminal.kill(session.terminalId);
+          window.zenexcoder.terminal.kill(session.terminalId);
           return;
         }
         createdTerminalId = session.terminalId;
@@ -55,25 +55,25 @@ export default function Terminal() {
       })
       .catch((error) => term.writeln(`Terminal error: ${error.message}`));
 
-    const dataDispose = window.nexcode.terminal.onData((payload) => {
+    const dataDispose = window.zenexcoder.terminal.onData((payload) => {
       if (payload.terminalId === terminalIdRef.current) {
         term.write(payload.data);
       }
     });
-    const exitDispose = window.nexcode.terminal.onExit((payload) => {
+    const exitDispose = window.zenexcoder.terminal.onExit((payload) => {
       if (payload.terminalId === terminalIdRef.current) {
         term.writeln(`\r\nProcess exited with ${payload.exitCode}`);
       }
     });
     const inputDispose = term.onData((data) => {
       if (terminalIdRef.current) {
-        window.nexcode.terminal.write(terminalIdRef.current, data);
+        window.zenexcoder.terminal.write(terminalIdRef.current, data);
       }
     });
     const resize = () => {
       if (disposed || !opened || !term.element) return;
       if (terminalIdRef.current) {
-        window.nexcode.terminal.resize(terminalIdRef.current, Math.max(20, term.cols || 80), Math.max(5, term.rows || 24));
+        window.zenexcoder.terminal.resize(terminalIdRef.current, Math.max(20, term.cols || 80), Math.max(5, term.rows || 24));
       }
     };
     window.addEventListener('resize', resize);
@@ -87,7 +87,7 @@ export default function Terminal() {
       exitDispose();
       inputDispose.dispose();
       const idToKill = createdTerminalId || terminalIdRef.current;
-      if (idToKill) window.nexcode.terminal.kill(idToKill);
+      if (idToKill) window.zenexcoder.terminal.kill(idToKill);
       terminalIdRef.current = null;
       term.dispose();
     };
@@ -96,7 +96,7 @@ export default function Terminal() {
   function runCommand() {
     if (!command.trim()) return;
     termRef.current?.writeln(`\r\n> ${command}\r\n`);
-    window.nexcode.terminal.run(
+    window.zenexcoder.terminal.run(
       { command, cwd: projectPath || undefined },
       {
         onOutput: (payload) => termRef.current?.write(payload.data.replace(/\n/g, '\r\n')),
@@ -120,7 +120,7 @@ export default function Terminal() {
           <button className="primary-button" onClick={runCommand}>
             <Play size={14} /> Run
           </button>
-          <button className="danger-button" onClick={() => terminalId && window.nexcode.terminal.kill(terminalId)}>
+          <button className="danger-button" onClick={() => terminalId && window.zenexcoder.terminal.kill(terminalId)}>
             <Square size={14} /> Kill
           </button>
         </div>

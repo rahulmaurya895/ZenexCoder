@@ -40,7 +40,7 @@ export default function EnvironmentsPanel() {
     setNewOpen(false);
     setDraft({ name: 'development', type: 'development', copyFromId: '' });
     if (first) {
-      await window.nexcode.notify.show({ title: 'Environment created', body: `Created and activated '${env.name}'.` });
+      await window.zenexcoder.notify.show({ title: 'Environment created', body: `Created and activated '${env.name}'.` });
     }
   }
 
@@ -60,7 +60,7 @@ export default function EnvironmentsPanel() {
   async function deleteEnv(env) {
     const result = await store.deleteEnv(projectPath, env.id);
     if (result?.error === 'cannot_delete_active') {
-      await window.nexcode.notify.show({ title: 'Environment', body: 'Switch to another environment first.' });
+      await window.zenexcoder.notify.show({ title: 'Environment', body: 'Switch to another environment first.' });
       return;
     }
     setSelectedId(store.getActiveEnv(projectPath)?.id || '');

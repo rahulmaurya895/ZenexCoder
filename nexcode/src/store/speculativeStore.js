@@ -55,13 +55,13 @@ export const useSpeculativeStore = create((set, get) => ({
   },
   async loadSettings() {
     if (get().settingsLoaded) return get().settings;
-    const settings = await window.nexcode.store.get('speculative:settings', get().settings).catch(() => get().settings);
+    const settings = await window.zenexcoder.store.get('speculative:settings', get().settings).catch(() => get().settings);
     set({ settings: { ...get().settings, ...(settings || {}) }, settingsLoaded: true });
     return get().settings;
   },
   async saveSettings(patch = {}) {
     const settings = { ...get().settings, ...patch };
-    await window.nexcode.store.set('speculative:settings', settings);
+    await window.zenexcoder.store.set('speculative:settings', settings);
     set({ settings, settingsLoaded: true });
     return settings;
   },

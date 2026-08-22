@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-const STORE_NAME = 'nexcode-environments.json';
+const STORE_NAME = 'zenexcoder-environments.json';
 let cache = null;
 let runtimeCache = null;
 
@@ -33,7 +33,7 @@ function storePath() {
 function fallbackKey() {
   return crypto
     .createHash('sha256')
-    .update(`nexcode-env:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
+    .update(`zenexcoder-env:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
     .digest();
 }
 

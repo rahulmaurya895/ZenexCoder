@@ -16,7 +16,7 @@ export default function WorktreePanel() {
   const branchOptions = useMemo(() => [...(branches.local || []), ...(branches.remote || [])], [branches]);
 
   async function pickFolder() {
-    const folder = await window.nexcode.folder.openDialog();
+    const folder = await window.zenexcoder.folder.openDialog();
     if (folder) setNewPath(folder);
   }
 
@@ -28,7 +28,7 @@ export default function WorktreePanel() {
       await add({ newPath: newPath.trim(), branchName: branchName.trim(), createBranch, fromRef });
       setNewPath('');
       setBranchName('');
-      await window.nexcode.notify.show({ title: 'Git worktree', body: 'Worktree created.' });
+      await window.zenexcoder.notify.show({ title: 'Git worktree', body: 'Worktree created.' });
     } finally {
       setBusy(false);
     }

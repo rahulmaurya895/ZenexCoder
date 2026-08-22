@@ -10,7 +10,7 @@ export const useProjectStore = create((set, get) => ({
   loading: false,
   async openProject(folderPath) {
     if (!folderPath) {
-      const chosen = await window.nexcode.folder.openDialog();
+      const chosen = await window.zenexcoder.folder.openDialog();
       if (!chosen) {
         return null;
       }
@@ -18,9 +18,9 @@ export const useProjectStore = create((set, get) => ({
     }
     set({ loading: true });
     try {
-      const fileTree = await window.nexcode.folder.readTree(folderPath);
-      await window.nexcode.db.upsertProject({ path: folderPath, name: basename(folderPath) });
-      const projects = await window.nexcode.db.listProjects();
+      const fileTree = await window.zenexcoder.folder.readTree(folderPath);
+      await window.zenexcoder.db.upsertProject({ path: folderPath, name: basename(folderPath) });
+      const projects = await window.zenexcoder.db.listProjects();
       const current = projects.find((project) => project.path === folderPath);
       set({ projectPath: folderPath, fileTree, loading: false, projectSettings: current?.settings || {} });
       return folderPath;
@@ -34,7 +34,7 @@ export const useProjectStore = create((set, get) => ({
     if (!projectPath) {
       return;
     }
-    const fileTree = await window.nexcode.folder.readTree(projectPath);
+    const fileTree = await window.zenexcoder.folder.readTree(projectPath);
     set({ fileTree });
   },
   async openFile(filePath) {
@@ -43,7 +43,7 @@ export const useProjectStore = create((set, get) => ({
       set({ activeFileId: existing.id });
       return existing;
     }
-    const result = await window.nexcode.file.read(filePath);
+    const result = await window.zenexcoder.file.read(filePath);
     const file = {
       id: filePath,
       path: filePath,
@@ -88,7 +88,7 @@ export const useProjectStore = create((set, get) => ({
     if (!file) {
       return null;
     }
-    await window.nexcode.file.write(file.path, file.content);
+    await window.zenexcoder.file.write(file.path, file.content);
     set((state) => ({
       openFiles: state.openFiles.map((item) =>
         item.id === id ? { ...item, dirty: false, originalContent: item.content } : item
@@ -101,11 +101,11 @@ export const useProjectStore = create((set, get) => ({
     const { projectPath, projectSettings } = get();
     if (!projectPath) return;
     const settings = { ...projectSettings, workMode };
-    await window.nexcode.db.upsertProject({ path: projectPath, name: basename(projectPath), settings });
+    await window.zenexcoder.db.upsertProject({ path: projectPath, name: basename(projectPath), settings });
     set({ projectSettings: settings });
   },
   async writeNewFile(filePath, content) {
-    await window.nexcode.file.write(filePath, content);
+    await window.zenexcoder.file.write(filePath, content);
     await get().refreshTree();
     return get().openFile(filePath);
   },

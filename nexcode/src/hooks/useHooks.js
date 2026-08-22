@@ -200,7 +200,7 @@ async function executeTrigger(trigger) {
   }
 
   if (trigger.triggerId) {
-    await window.nexcode.hooks.resolveTrigger({
+    await window.zenexcoder.hooks.resolveTrigger({
       triggerId: trigger.triggerId,
       status,
       details: { results }
@@ -210,14 +210,14 @@ async function executeTrigger(trigger) {
 }
 
 function ensureHookListeners() {
-  if (!window.nexcode?.hooks || !window.nexcode?.automation) return;
+  if (!window.zenexcoder?.hooks || !window.zenexcoder?.automation) return;
   if (!disposers.length) {
     disposers = [
-      window.nexcode.hooks.onExternalTrigger((trigger) => {
+      window.zenexcoder.hooks.onExternalTrigger((trigger) => {
         executeTrigger(trigger).catch((error) => {
           useHookStore.getState().setError(error.message);
           if (trigger.triggerId) {
-            window.nexcode.hooks.resolveTrigger({
+            window.zenexcoder.hooks.resolveTrigger({
               triggerId: trigger.triggerId,
               status: 'allow',
               details: { error: error.message, reason: 'Hook handler failed; failing open.' }
@@ -225,7 +225,7 @@ function ensureHookListeners() {
           }
         });
       }),
-      window.nexcode.automation.onFileSaved((payload) => {
+      window.zenexcoder.automation.onFileSaved((payload) => {
         executeTrigger({
           event: 'on_file_save',
           projectPath: useProjectStore.getState().projectPath || '',
@@ -264,7 +264,7 @@ export function useHooks() {
     if (!projectPath || previous.current.projectPath === projectPath) return;
     previous.current.projectPath = projectPath;
     useHookStore.getState().registerProject(projectPath).catch(() => {});
-    window.nexcode?.hooks?.triggerAppEvent({
+    window.zenexcoder?.hooks?.triggerAppEvent({
       event: 'onProjectOpen',
       projectPath,
       payload: { projectPath }
@@ -274,7 +274,7 @@ export function useHooks() {
   useEffect(() => {
     if (!projectPath || !branch || previous.current.branch === branch) return;
     previous.current.branch = branch;
-    window.nexcode?.hooks?.triggerAppEvent({
+    window.zenexcoder?.hooks?.triggerAppEvent({
       event: 'onBranchChange',
       projectPath,
       payload: { projectPath, branch }
@@ -284,7 +284,7 @@ export function useHooks() {
   useEffect(() => {
     if (!projectPath || !activeEnvId || previous.current.activeEnvId === activeEnvId) return;
     previous.current.activeEnvId = activeEnvId;
-    window.nexcode?.hooks?.triggerAppEvent({
+    window.zenexcoder?.hooks?.triggerAppEvent({
       event: 'onEnvChange',
       projectPath,
       payload: { projectPath, activeEnvId }

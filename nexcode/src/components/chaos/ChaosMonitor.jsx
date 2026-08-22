@@ -7,15 +7,15 @@ export default function ChaosMonitor() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    if (window.nexcode?.chaos) {
-      window.nexcode.chaos.getLogs().then((res) => {
+    if (window.zenexcoder?.chaos) {
+      window.zenexcoder.chaos.getLogs().then((res) => {
         if (res) {
           setLogs(res.logs || []);
           setActiveRuns(res.activeRuns || []);
         }
       });
 
-      const unbindStatus = window.nexcode.chaos.onStatusChanged((data) => {
+      const unbindStatus = window.zenexcoder.chaos.onStatusChanged((data) => {
         if (data?.testRun) {
           setActiveRuns((prev) => {
             const index = prev.findIndex((r) => r.testId === data.testRun.testId);
@@ -29,7 +29,7 @@ export default function ChaosMonitor() {
         }
       });
 
-      const unbindLog = window.nexcode.chaos.onLog((logEntry) => {
+      const unbindLog = window.zenexcoder.chaos.onLog((logEntry) => {
         setLogs((prev) => [logEntry, ...prev.slice(0, 49)]);
       });
 

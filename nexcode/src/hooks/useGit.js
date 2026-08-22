@@ -8,13 +8,13 @@ let gitDisposers = [];
 function ensureGitListeners() {
   if (!gitDisposers.length) {
     gitDisposers = [
-      window.nexcode.git.onStatusChanged((payload) => {
+      window.zenexcoder.git.onStatusChanged((payload) => {
         const currentProject = useProjectStore.getState().projectPath;
         if (!payload?.projectPath || payload.projectPath === currentProject) {
           useGitStore.getState().refreshStatus(currentProject);
         }
       }),
-      window.nexcode.automation.onFileSaved(() => {
+      window.zenexcoder.automation.onFileSaved(() => {
         const currentProject = useProjectStore.getState().projectPath;
         useGitStore.getState().refreshStatus(currentProject);
       })

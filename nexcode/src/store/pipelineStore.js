@@ -30,7 +30,7 @@ export const usePipelineStore = create((set, get) => ({
   },
 
   async load() {
-    const state = await window.nexcode.cicd.getState().catch(() => null);
+    const state = await window.zenexcoder.cicd.getState().catch(() => null);
     if (state) {
       set({
         status: state.status || 'idle',
@@ -44,7 +44,7 @@ export const usePipelineStore = create((set, get) => ({
   async generateIaC() {
     set({ loading: true, error: '' });
     try {
-      const result = await window.nexcode.cicd.generateIaC({
+      const result = await window.zenexcoder.cicd.generateIaC({
         projectPath: get().projectPath(),
         provider: get().provider,
         healthPath: '/health'
@@ -60,7 +60,7 @@ export const usePipelineStore = create((set, get) => ({
   async startDeploy() {
     set({ loading: true, error: '' });
     try {
-      const result = await window.nexcode.cicd.deployStart({
+      const result = await window.zenexcoder.cicd.deployStart({
         projectPath: get().projectPath(),
         provider: get().provider,
         target: get().target,
@@ -81,7 +81,7 @@ export const usePipelineStore = create((set, get) => ({
   async rollback() {
     set({ loading: true, error: '' });
     try {
-      const result = await window.nexcode.cicd.rollbackManual({
+      const result = await window.zenexcoder.cicd.rollbackManual({
         deploymentId: get().deployment?.id,
         projectPath: get().projectPath(),
         provider: get().provider,

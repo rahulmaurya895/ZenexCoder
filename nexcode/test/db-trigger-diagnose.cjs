@@ -2,10 +2,10 @@ const { app } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
-app.setPath('userData', path.join(process.env.APPDATA, 'nexcode'));
+app.setPath('userData', path.join(process.env.APPDATA, 'zenexcoder'));
 app.whenReady().then(() => {
-  const source = path.join(app.getPath('userData'), 'database', 'nexcode.sqlite');
-  const copy = path.join(app.getPath('temp'), `nexcode-db-diagnose-${Date.now()}.sqlite`);
+  const source = path.join(app.getPath('userData'), 'database', 'zenexcoder.sqlite');
+  const copy = path.join(app.getPath('temp'), `zenexcoder-db-diagnose-${Date.now()}.sqlite`);
   fs.copyFileSync(source, copy);
   const db = new Database(copy);
   const tables = db.prepare("SELECT name, type FROM sqlite_master WHERE name IN ('messages','chat_sessions','messages_fts','incidents','automations') ORDER BY name").all();

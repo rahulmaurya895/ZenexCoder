@@ -44,7 +44,7 @@ export const useSettingsStore = create((set, get) => ({
   async loadSettings() {
     set({ loading: true });
     try {
-      const saved = await window.nexcode.store.get('settings', defaultSettings);
+      const saved = await window.zenexcoder.store.get('settings', defaultSettings);
       set({
         ...defaultSettings,
         ...saved,
@@ -68,7 +68,7 @@ export const useSettingsStore = create((set, get) => ({
     }
   },
   async saveSettings(partial) {
-    const saved = await window.nexcode.store.get('settings', {}).catch(() => ({}));
+    const saved = await window.zenexcoder.store.get('settings', {}).catch(() => ({}));
     const next = { ...get(), ...partial };
     const serializable = {
       apiKeys: next.apiKeys,
@@ -79,7 +79,7 @@ export const useSettingsStore = create((set, get) => ({
       connections: partial.connections ?? saved.connections ?? next.connections,
       isFirstLaunch: next.isFirstLaunch
     };
-    await window.nexcode.store.set('settings', serializable);
+    await window.zenexcoder.store.set('settings', serializable);
     set(partial);
   },
   async saveApiKey(provider, apiKey) {
@@ -96,7 +96,7 @@ export const useSettingsStore = create((set, get) => ({
     await get().saveSettings({ isFirstLaunch: false });
   },
   async resetSettings() {
-    await window.nexcode.app.factoryReset();
+    await window.zenexcoder.app.factoryReset();
     set(defaultSettings);
   }
 }));

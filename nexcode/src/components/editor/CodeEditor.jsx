@@ -88,12 +88,12 @@ export default function CodeEditor() {
   useEffect(() => {
     const save = () => activeFileId && saveFile(activeFileId);
     const disposers = [
-      window.nexcode.app.onMenu('menu:save-file', save),
-      window.nexcode.app.onMenu('menu:ai-complete', () => handleComplete()),
-      window.nexcode.app.onMenu('menu:ai-explain', () => handleExplain()),
-      window.nexcode.app.onMenu('menu:ai-fix', () => handleFix()),
-      window.nexcode.app.onMenu('menu:ai-refactor', () => handleRefactor()),
-      window.nexcode.app.onMenu('menu:ai-tests', () => handleTests())
+      window.zenexcoder.app.onMenu('menu:save-file', save),
+      window.zenexcoder.app.onMenu('menu:ai-complete', () => handleComplete()),
+      window.zenexcoder.app.onMenu('menu:ai-explain', () => handleExplain()),
+      window.zenexcoder.app.onMenu('menu:ai-fix', () => handleFix()),
+      window.zenexcoder.app.onMenu('menu:ai-refactor', () => handleRefactor()),
+      window.zenexcoder.app.onMenu('menu:ai-tests', () => handleTests())
     ];
     return () => disposers.forEach((dispose) => dispose());
   });
@@ -151,7 +151,7 @@ export default function CodeEditor() {
       before,
       after,
       language,
-      onToken: (token) => editor.trigger('nexcode', 'type', { text: token })
+      onToken: (token) => editor.trigger('zenexcoder', 'type', { text: token })
     });
   }
 
@@ -186,7 +186,7 @@ export default function CodeEditor() {
     const result = await addDocs(code, language);
     const block = firstCodeBlock(result);
     const updated = block?.code || result;
-    await window.nexcode.review.add({
+    await window.zenexcoder.review.add({
       sessionId: activeSessionId,
       filePath: activeFile.path,
       beforeContent: activeFile.content,
@@ -218,8 +218,8 @@ export default function CodeEditor() {
   async function handleTests() {
     if (!activeFile) return;
     const path = await generateTests(activeFile, writeNewFile);
-    const created = await window.nexcode.file.read(path).catch(() => ({ content: '' }));
-    await window.nexcode.review.add({
+    const created = await window.zenexcoder.file.read(path).catch(() => ({ content: '' }));
+    await window.zenexcoder.review.add({
       sessionId: activeSessionId,
       filePath: path,
       beforeContent: '',
@@ -231,7 +231,7 @@ export default function CodeEditor() {
 
   async function applyDiff() {
     if (!activeFile || !diff) return;
-    await window.nexcode.review.add({
+    await window.zenexcoder.review.add({
       sessionId: activeSessionId,
       filePath: activeFile.path,
       beforeContent: activeFile.content,

@@ -7,8 +7,8 @@ let disposers = [];
 function ensureBrowserListeners() {
   if (!disposers.length) {
     disposers = [
-      window.nexcode.browser.onNavChanged((payload) => useBrowserStore.getState().applyState(payload)),
-      window.nexcode.browser.onFrameUpdate((payload) => useBrowserStore.getState().applyFrame(payload))
+      window.zenexcoder.browser.onNavChanged((payload) => useBrowserStore.getState().applyState(payload)),
+      window.zenexcoder.browser.onFrameUpdate((payload) => useBrowserStore.getState().applyFrame(payload))
     ];
   }
   listenerUsers += 1;

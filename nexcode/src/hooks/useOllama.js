@@ -46,7 +46,7 @@ export function useOllama() {
     );
   }, [refresh]);
 
-  const installOllama = useCallback((handlers) => window.nexcode.ollama.install({}, handlers), []);
+  const installOllama = useCallback((handlers) => window.zenexcoder.ollama.install({}, handlers), []);
 
   return {
     models,

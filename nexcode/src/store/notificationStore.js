@@ -14,7 +14,7 @@ function inferType(payload = {}) {
 function normalizeNotification(payload = {}) {
   return {
     id: payload.id || `note-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    title: payload.title || 'NexCode',
+    title: payload.title || 'ZezenexCoderr',
     message: payload.message || payload.body || '',
     type: inferType(payload),
     timestamp: payload.timestamp || Date.now(),
@@ -29,7 +29,7 @@ export const useNotificationStore = create((set, get) => ({
   unreadCount: 0,
   loaded: false,
   async load() {
-    const stored = await window.nexcode.store.get(STORE_KEY, []).catch(() => []);
+    const stored = await window.zenexcoder.store.get(STORE_KEY, []).catch(() => []);
     const notifications = (Array.isArray(stored) ? stored : []).map(normalizeNotification).slice(0, MAX_NOTIFICATIONS);
     set({
       notifications,
@@ -39,7 +39,7 @@ export const useNotificationStore = create((set, get) => ({
   },
   persist() {
     const notifications = get().notifications.slice(0, MAX_NOTIFICATIONS);
-    window.nexcode.store.set(STORE_KEY, notifications).catch(() => {});
+    window.zenexcoder.store.set(STORE_KEY, notifications).catch(() => {});
   },
   addNotification(payload = {}) {
     const notification = normalizeNotification(payload);
@@ -66,7 +66,7 @@ export const useNotificationStore = create((set, get) => ({
   },
   clearAll() {
     set({ notifications: [], toastQueue: [], unreadCount: 0 });
-    window.nexcode.store.set(STORE_KEY, []).catch(() => {});
+    window.zenexcoder.store.set(STORE_KEY, []).catch(() => {});
   },
   setCenterOpen(centerOpen) {
     set({ centerOpen });

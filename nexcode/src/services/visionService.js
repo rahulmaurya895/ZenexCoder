@@ -10,13 +10,13 @@ export const VISION_TASKS = [
 ];
 
 export async function captureScreen() {
-  return window.nexcode.vision.captureScreen();
+  return window.zenexcoder.vision.captureScreen();
 }
 
 export async function openImage() {
-  return window.nexcode.vision.openImageDialog();
+  return window.zenexcoder.vision.openImageDialog();
 }
 
 export async function readImage(filePath) {
-  return window.nexcode.vision.readImage(filePath);
+  return window.zenexcoder.vision.readImage(filePath);
 }

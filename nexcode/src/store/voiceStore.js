@@ -36,7 +36,7 @@ export const useVoiceStore = create((set, get) => ({
   loading: false,
 
   async loadSettings() {
-    const saved = await window.nexcode.store.get('voice:settings', defaultVoiceSettings).catch(() => defaultVoiceSettings);
+    const saved = await window.zenexcoder.store.get('voice:settings', defaultVoiceSettings).catch(() => defaultVoiceSettings);
     set({
       settings: {
         ...defaultVoiceSettings,
@@ -48,7 +48,7 @@ export const useVoiceStore = create((set, get) => ({
 
   async saveSettings(patch = {}) {
     const settings = { ...get().settings, ...patch };
-    await window.nexcode.store.set('voice:settings', settings);
+    await window.zenexcoder.store.set('voice:settings', settings);
     set({ settings });
     return settings;
   },
@@ -78,7 +78,7 @@ export const useVoiceStore = create((set, get) => ({
     const projectPath = useProjectStore.getState().projectPath;
     set({ loading: true, connectionState: 'connecting', error: '' });
     try {
-      const state = await window.nexcode.voice.connect({
+      const state = await window.zenexcoder.voice.connect({
         ...settings,
         apiKey,
         projectPath
@@ -96,7 +96,7 @@ export const useVoiceStore = create((set, get) => ({
         loading: false,
         error: error.message || 'Unable to connect voice session.'
       });
-      window.nexcode.notify.show({
+      window.zenexcoder.notify.show({
         title: 'Voice connection failed',
         body: error.message || 'Unable to connect voice session.',
         type: 'error'
@@ -106,7 +106,7 @@ export const useVoiceStore = create((set, get) => ({
   },
 
   async disconnect() {
-    await window.nexcode.voice.disconnect().catch(() => {});
+    await window.zenexcoder.voice.disconnect().catch(() => {});
     set({
       ...disconnectedState,
       loading: false
@@ -168,6 +168,6 @@ export const useVoiceStore = create((set, get) => ({
   sendContextUpdate(payload = {}) {
     const state = get();
     if (!state.connected) return Promise.resolve({ ok: false, reason: 'not_connected' });
-    return window.nexcode.voice.sendContextUpdate(payload).catch((error) => ({ ok: false, error: error.message }));
+    return window.zenexcoder.voice.sendContextUpdate(payload).catch((error) => ({ ok: false, error: error.message }));
   }
 }));

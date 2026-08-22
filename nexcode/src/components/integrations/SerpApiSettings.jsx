@@ -8,9 +8,9 @@ export default function SerpApiSettings() {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    if (window.nexcode?.fastSearch) {
+    if (window.zenexcoder?.fastSearch) {
       setLoading(true);
-      window.nexcode.fastSearch.getKey()
+      window.zenexcoder.fastSearch.getKey()
         .then((res) => {
           if (res?.apiKey) setApiKey(res.apiKey);
         })
@@ -21,7 +21,7 @@ export default function SerpApiSettings() {
   async function handleSave() {
     setLoading(true);
     try {
-      await window.nexcode.fastSearch.saveKey(apiKey);
+      await window.zenexcoder.fastSearch.saveKey(apiKey);
       setStatus({ status: 'saved', message: 'SerpApi Key securely stored using safeStorage encryption.' });
     } catch (err) {
       setStatus({ status: 'error', error: err.message });
@@ -34,7 +34,7 @@ export default function SerpApiSettings() {
     setTesting(true);
     setStatus({ status: 'searching', message: 'Executing test search query...' });
     try {
-      const res = await window.nexcode.fastSearch.execute('React 19 hooks syntax');
+      const res = await window.zenexcoder.fastSearch.execute('React 19 hooks syntax');
       setStatus({
         status: 'success',
         message: `Fast Search Success! Fetched in ${res.elapsedMs}ms (< 1.5s threshold).`

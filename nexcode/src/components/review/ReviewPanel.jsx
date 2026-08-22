@@ -15,7 +15,7 @@ export default function ReviewPanel({ records: providedRecords, onChange }) {
       setActiveId((current) => current || providedRecords[0]?.id || null);
       return;
     }
-    const list = await window.nexcode.review.list('pending_review');
+    const list = await window.zenexcoder.review.list('pending_review');
     setRecords(list);
     setActiveId((current) => current || list[0]?.id || null);
   }
@@ -27,7 +27,7 @@ export default function ReviewPanel({ records: providedRecords, onChange }) {
   const active = records.find((item) => item.id === activeId) || records[0];
 
   async function action(record, nextAction) {
-    await window.nexcode.review.action({ id: record.id, action: nextAction });
+    await window.zenexcoder.review.action({ id: record.id, action: nextAction });
     await load();
     onChange?.();
   }

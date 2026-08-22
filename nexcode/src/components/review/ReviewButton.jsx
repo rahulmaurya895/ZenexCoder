@@ -14,21 +14,21 @@ export default function ReviewButton({ sourceId }) {
   const reviewMode = useAppStore((state) => state.reviewMode);
 
   async function refresh() {
-    const list = await window.nexcode.review.list('pending_review');
+    const list = await window.zenexcoder.review.list('pending_review');
     setRecords(sourceId ? list.filter((item) => item.stepId === sourceId || item.messageId === sourceId) : list);
     setPendingReviewCount(list.length);
   }
 
   useEffect(() => {
     refresh().catch(() => {});
-    const dispose = window.nexcode.review.onUpdate(refresh);
+    const dispose = window.zenexcoder.review.onUpdate(refresh);
     return dispose;
   }, [sourceId]);
 
   async function openReview() {
     await refresh();
     if (reviewMode === 'detached') {
-      await window.nexcode.review.openDetached();
+      await window.zenexcoder.review.openDetached();
       return;
     }
     setOpen((value) => !value);

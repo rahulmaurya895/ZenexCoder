@@ -2,7 +2,7 @@ import { app, ipcMain, safeStorage } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const STORE_FILE = 'nexcode-github.json';
+const STORE_FILE = 'zenexcoder-github.json';
 
 function storePath() {
   return path.join(app.getPath('userData'), STORE_FILE);

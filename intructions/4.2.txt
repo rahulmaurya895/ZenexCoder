@@ -1,5 +1,5 @@
 ================================================================================
-   NEXCODE — PHASE 4 (PART 2 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZENEXCODER — PHASE 4 (PART 2 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "COLLABORATIVE INTELLIGENCE" (Shared Knowledge & Encrypted Sync)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -7,7 +7,7 @@
 CONTEXT FOR CODEX:
 Phase 4 Part 1 built the "Self-Learning Engine" (Failure Pattern Analysis).
 Phase 4 SCOPE (build now):
-  1. Peer-to-Peer Sync Engine — Allow NexCode instances on different machines 
+  1. Peer-to-Peer Sync Engine — Allow ZezenexCoderr instances on different machines 
      (in the same office/network) to discover each other and share "Learned Rules".
   2. Encrypted Knowledge Vault — A shared repository of "Anti-Patterns" and "Project 
      Context" that is end-to-end encrypted (E2EE) so even if it syncs via a relay 
@@ -30,14 +30,14 @@ In Phase 4 Part 1, you taught the AI to learn from its own mistakes. But what
 if you work in a team of 5 people? If Dev A fixes a bug, Dev B shouldn't have 
 to hit the same bug again. 
 
-Collaborative Intelligence is "Collective Learning". Your NexCode instance will 
-silently talk to your teammate's NexCode instance. If the AI learns that 
+Collaborative Intelligence is "Collective Learning". Your ZezenexCoderr instance will 
+silently talk to your teammate's ZezenexCoderr instance. If the AI learns that 
 "Always use `bcrypt` instead of `md5`" in this project, it will push that 
-"Learned Rule" to the team vault. Dev B's NexCode will automatically pull 
+"Learned Rule" to the team vault. Dev B's ZezenexCoderr will automatically pull 
 this rule, and the AI will suggest the better fix to Dev B instantly. 
 
 We use End-to-End Encryption (E2EE). The "Shared Knowledge" is encrypted 
-with a project-specific key. NexCode acts as a decentralized brain for the team.
+with a project-specific key. ZezenexCoderr acts as a decentralized brain for the team.
 
 ================================================================================
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 4, PART 2)
@@ -72,7 +72,7 @@ Goal: Store the learned rules in a format that can be synced securely.
   - Every exported "Learned Rule" must be encrypted before leaving the machine.
 
 2.2 vaultHandler.js (electron/handlers/)
-  - Store shared rules in `.nexcode/shared_knowledge.enc`.
+  - Store shared rules in `.zenexcoder/shared_knowledge.enc`.
   - When a new rule is learned (Phase 4 Part 1), encrypt it and place it in 
     the sync queue.
 
@@ -129,7 +129,7 @@ SECTION 6: IMPLEMENTATION ORDER
 6. swarmHandler.js (Phase 3 Part 1 extension) — Update the Swarm Architect to 
    check the "Shared Rules" table before drafting plans.
 7. End-to-end test:
-   - Run NexCode on Machine A and Machine B.
+   - Run ZezenexCoderr on Machine A and Machine B.
    - Pair them (PIN auth).
    - Create a rule on Machine A (force it by triggering a fake error/fix).
    - Verify Machine B automatically receives the rule and shows "E2EE Sync Active".

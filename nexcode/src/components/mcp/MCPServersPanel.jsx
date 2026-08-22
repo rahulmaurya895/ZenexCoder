@@ -42,7 +42,7 @@ export default function MCPServersPanel() {
   async function connect(server = selected) {
     if (!server) return;
     await mcp.connectServer(server.id).catch((err) => {
-      window.nexcode.notify.show({ title: 'Extension connection failed', body: err.message }).catch(() => {});
+      window.zenexcoder.notify.show({ title: 'Extension connection failed', body: err.message }).catch(() => {});
     });
   }
 
@@ -72,7 +72,7 @@ export default function MCPServersPanel() {
       }
       await mcp.connectServer(saved.id);
     } catch (error) {
-      await window.nexcode.notify.show({ title: 'Extension', body: error.message });
+      await window.zenexcoder.notify.show({ title: 'Extension', body: error.message });
     }
   }
 

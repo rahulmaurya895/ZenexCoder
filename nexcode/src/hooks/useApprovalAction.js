@@ -10,12 +10,12 @@ export function useApprovalAction() {
     async (approval) =>
       new Promise((resolve) => {
         const id = approval.id || `approval-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const dispose = window.nexcode.agent.onApprovalResolved((payload) => {
+        const dispose = window.zenexcoder.agent.onApprovalResolved((payload) => {
           if ((payload.actionId || payload.id) !== id) return;
           dispose();
           resolve(payload.decision === 'approve' ? payload : null);
         });
-        window.nexcode.agent
+        window.zenexcoder.agent
           .requestApproval({ ...approval, id })
           .then(() => setRightPanelOpen(true))
           .catch(() => {

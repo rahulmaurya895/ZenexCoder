@@ -64,7 +64,7 @@ export default function VoiceOrbOverlay() {
             <button className="icon-button" title={muted ? 'Unmute microphone' : 'Mute microphone'} onClick={toggleMuted}>
               {muted ? <MicOff size={14} /> : <Mic size={14} />}
             </button>
-            <button className="icon-button" title="Open voice settings" onClick={() => window.dispatchEvent(new CustomEvent('nexcode:open-settings'))}>
+            <button className="icon-button" title="Open voice settings" onClick={() => window.dispatchEvent(new CustomEvent('zenexcoder:open-settings'))}>
               <Settings size={14} />
             </button>
             <button className="icon-button danger-button" title="Disconnect voice" onClick={disconnect}>

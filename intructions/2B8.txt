@@ -1,6 +1,6 @@
 ================================================================================
-   NEXCODE — PHASE 2B (PART 8 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of NEXCODE_PHASE2B_PART7_BUILD_INSTRUCTIONS.txt
+   ZENEXCODER — PHASE 2B (PART 8 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZENEXCODER_PHASE2B_PART7_BUILD_INSTRUCTIONS.txt
    THEME: "HOOKS SYSTEM" — App Lifecycle & Physical Git Hooks Integration
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -14,7 +14,7 @@ Part 8 SCOPE (build now):
      Electron main process to receive events from external processes (like 
      external terminals running git commands).
   2. Physical Git Hooks — Automatically generate and write bash scripts to 
-     `.git/hooks/pre-commit` and `pre-push` that trigger NexCode's agent.
+     `.git/hooks/pre-commit` and `pre-push` that trigger ZezenexCoderr's agent.
   3. App Lifecycle Hooks — Deep system events: `onProjectOpen`, `onBranchChange`, 
      `onEnvChange`.
   4. Hooks Panel — UI to bind these system/git events to Phase 2A Automations 
@@ -31,7 +31,7 @@ wired to real state/IPC[cite: 264].
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 8 ONLY)
 ================================================================================
 
-Add these files to the existing nexcode/ structure:
+Add these files to the existing zenexcoder/ structure:
 
 src/
 ├── components/
@@ -59,7 +59,7 @@ SECTION 2: BACKGROUND SERVER & PHYSICAL GIT HOOKS
 ================================================================================
 
 Goal: If a user types `git commit -m "update"` in standard iTerm/Command Prompt, 
-NexCode should still intercept it to run the "AI Commit Review" automation.
+ZezenexCoderr should still intercept it to run the "AI Commit Review" automation.
 
 2.1 localServerHandler.js (electron/handlers/)
   - On app launch, start a basic Node HTTP server on `127.0.0.1` (port auto-assigned).
@@ -73,11 +73,11 @@ NexCode should still intercept it to run the "AI Commit Review" automation.
     - Validates if `.git` folder exists.
     - Writes a bash script to `.git/hooks/[hookType]` (e.g., pre-commit).
     - The bash script uses `curl` to send a POST request to the 
-      localServerHandler's port (saving the port in a `.nexcode-port` temp file 
-      or using an environment variable injected by NexCode's terminal).
+      localServerHandler's port (saving the port in a `.zenexcoder-port` temp file 
+      or using an environment variable injected by ZezenexCoderr's terminal).
     - Make the script executable (`chmod +x`).
-    - Script logic: "If NexCode server is reachable, wait for response. If 
-      response is 400/reject, abort commit (exit 1). If NexCode is closed, 
+    - Script logic: "If ZezenexCoderr server is reachable, wait for response. If 
+      response is 400/reject, abort commit (exit 1). If ZezenexCoderr is closed, 
       bypass and allow commit (exit 0)."
 
 2.3 App Lifecycle Events
@@ -127,7 +127,7 @@ permissions.
     global Permission Mode is "Default", it will HALT and show an ApprovalRequest 
     card[cite: 153].
   - If it is a Git Hook (e.g., pre-commit) and it halts for approval, the 
-    bash script will "hang" (wait) until the user clicks Approve/Deny in NexCode. 
+    bash script will "hang" (wait) until the user clicks Approve/Deny in ZezenexCoderr. 
     If denied, the local server returns 400, and the bash script aborts the commit.
 
 ================================================================================
@@ -178,7 +178,7 @@ SECTION 7: IMPLEMENTATION ORDER (PART 8)
    - Make a change in the editor.
    - Open standard external terminal and run `git commit -m "test"`.
    - Verify standard terminal hangs.
-   - Verify NexCode pops up showing the Agent analyzing the files.
+   - Verify ZezenexCoderr pops up showing the Agent analyzing the files.
    - If Agent approves, terminal completes the commit.
 
 ================================================================================
@@ -186,18 +186,18 @@ SECTION 8: FINAL INSTRUCTIONS TO CODEX
 ================================================================================
 
 1. Build on top of EXISTING Phase 1 + 2A + 2B (Parts 1-7) codebase.
-2. The Git Hook Bash Script must be robust. If the NexCode local server is 
+2. The Git Hook Bash Script must be robust. If the ZezenexCoderr local server is 
    offline (app closed), it MUST fail open (`exit 0`) so it doesn't lock the 
    user out of git commits.
 3. Ensure the local port is dynamic to prevent `EADDRINUSE` errors if multiple 
    instances are somehow open or another app uses the port. Write the active 
-   port to `.nexcode-port` in the project root or `.git/` folder when the project 
+   port to `.zenexcoder-port` in the project root or `.git/` folder when the project 
    is opened, and clean it up on close.
 
 START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 8 OF 10
-NEXT FILE: NEXCODE_PHASE2B_PART9_BUILD_INSTRUCTIONS.txt (Agent Environment 
+NEXT FILE: ZENEXCODER_PHASE2B_PART9_BUILD_INSTRUCTIONS.txt (Agent Environment 
 Selector, Terminal Shell Selector, Popout Window)
 ================================================================================

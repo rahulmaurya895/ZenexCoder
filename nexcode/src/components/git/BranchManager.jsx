@@ -57,7 +57,7 @@ export default function BranchManager({ onClose }) {
     }
     const result = await renameBranch(oldName, nextName);
     if (result?.warning) {
-      await window.nexcode.notify.show({ title: 'Branch renamed', body: result.warning });
+      await window.zenexcoder.notify.show({ title: 'Branch renamed', body: result.warning });
     }
     setEditing('');
   }

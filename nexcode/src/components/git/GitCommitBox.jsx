@@ -17,7 +17,7 @@ export default function GitCommitBox() {
   }, [pendingApproval]);
 
   useEffect(() => {
-    const dispose = window.nexcode.agent.onApprovalResolved(async (payload) => {
+    const dispose = window.zenexcoder.agent.onApprovalResolved(async (payload) => {
       const pending = pendingRef.current;
       if (!pending || (payload.actionId || payload.id) !== pending.id) return;
       setPendingApproval(null);
@@ -36,7 +36,7 @@ export default function GitCommitBox() {
     if (!cleanMessage || !staged.length) return;
     const permission = check({ actionType: 'git_commit' });
     if (permission.requiresApproval) {
-      const approval = await window.nexcode.agent.requestApproval({
+      const approval = await window.zenexcoder.agent.requestApproval({
         actionType: 'git_commit',
         title: 'AI wants to create a git commit',
         description: cleanMessage,

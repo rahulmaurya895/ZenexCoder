@@ -6,7 +6,7 @@ export default function DictationMic({ onTranscript }) {
   const [language, setLanguage] = useState('en-US');
 
   useEffect(() => {
-    window.nexcode.store
+    window.zenexcoder.store
       .get('dictation:settings', { language: 'en-US' })
       .then((settings) => setLanguage(settings.language || 'en-US'))
       .catch(() => {});

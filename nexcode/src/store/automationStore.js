@@ -14,22 +14,22 @@ export const useAutomationStore = create((set, get) => ({
   automations: [],
   editingAutomation: null,
   async loadAutomations() {
-    const automations = await window.nexcode.automation.list();
+    const automations = await window.zenexcoder.automation.list();
     set({ automations });
   },
   async addAutomation(automation) {
-    const saved = await window.nexcode.automation.save(automation);
+    const saved = await window.zenexcoder.automation.save(automation);
     set((state) => ({ automations: [saved, ...state.automations.filter((item) => item.id !== saved.id)] }));
     return saved;
   },
   async updateAutomation(id, patch) {
     const current = get().automations.find((item) => item.id === id);
-    const saved = await window.nexcode.automation.save({ ...current, ...patch, id });
+    const saved = await window.zenexcoder.automation.save({ ...current, ...patch, id });
     set((state) => ({ automations: state.automations.map((item) => (item.id === id ? saved : item)) }));
     return saved;
   },
   async deleteAutomation(id) {
-    await window.nexcode.automation.delete(id);
+    await window.zenexcoder.automation.delete(id);
     set((state) => ({ automations: state.automations.filter((item) => item.id !== id) }));
   },
   async toggleAutomation(id) {
@@ -76,7 +76,7 @@ export const useAutomationStore = create((set, get) => ({
         devToolsVisible: app.devToolsVisible
       }
     });
-    const updated = await window.nexcode.automation.markRun(id);
+    const updated = await window.zenexcoder.automation.markRun(id);
     set((state) => ({ automations: state.automations.map((item) => (item.id === id ? updated : item)) }));
     return { runId: runResult?.runId || plan.id, automation: updated };
   }

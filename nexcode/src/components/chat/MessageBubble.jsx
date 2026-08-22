@@ -41,7 +41,7 @@ export default function MessageBubble({ message, highlight = false }) {
   const activity = run?.activity || [];
 
   useEffect(() => {
-    window.nexcode.store.get('plugins', { enabled: {} }).then(setPluginState).catch(() => {});
+    window.zenexcoder.store.get('plugins', { enabled: {} }).then(setPluginState).catch(() => {});
   }, []);
 
   async function saveFileToProject(code, language) {
@@ -52,7 +52,7 @@ export default function MessageBubble({ message, highlight = false }) {
     const cleanName = fileName.trim();
     if (projectPath) {
       const fullPath = `${projectPath}/${cleanName}`;
-      await window.nexcode.file.write(fullPath, code);
+      await window.zenexcoder.file.write(fullPath, code);
       await loadFiles(projectPath);
       await addMessage('system', `Saved file ${cleanName} to project folder: ${projectPath}`);
     } else {
@@ -66,7 +66,7 @@ export default function MessageBubble({ message, highlight = false }) {
       return;
     }
     let output = '';
-    const runner = window.nexcode.terminal.run(
+    const runner = window.zenexcoder.terminal.run(
       { command },
       {
         onOutput: (payload) => {
@@ -81,7 +81,7 @@ export default function MessageBubble({ message, highlight = false }) {
   }
 
   async function saveSnippet(code, language) {
-    await window.nexcode.db.addSnippet({
+    await window.zenexcoder.db.addSnippet({
       type: 'message-code',
       inputCode: message.content || '',
       outputCode: code,

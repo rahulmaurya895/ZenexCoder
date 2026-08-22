@@ -12,17 +12,17 @@ function terminateAgent(reason = 'AI CONTROL TERMINATED') {
   if (['running', 'paused'].includes(agent.runState)) {
     agent.stop().catch(() => {});
   }
-  window.nexcode.ai?.abortAll?.(reason).catch(() => {});
-  window.nexcode.notify?.show?.({ title: 'AI CONTROL TERMINATED', body: reason }).catch(() => {});
+  window.zenexcoder.ai?.abortAll?.(reason).catch(() => {});
+  window.zenexcoder.notify?.show?.({ title: 'AI CONTROL TERMINATED', body: reason }).catch(() => {});
 }
 
 function ensureComputerListeners() {
-  if (!window.nexcode?.computer) return;
+  if (!window.zenexcoder?.computer) return;
   if (!disposers.length) {
     disposers = [
-      window.nexcode.computer.onStateChanged((payload) => useComputerStore.getState().applyState(payload)),
-      window.nexcode.computer.onActionLogged((payload) => useComputerStore.getState().addLog(payload)),
-      window.nexcode.computer.onEmergencyStop((payload) => {
+      window.zenexcoder.computer.onStateChanged((payload) => useComputerStore.getState().applyState(payload)),
+      window.zenexcoder.computer.onActionLogged((payload) => useComputerStore.getState().addLog(payload)),
+      window.zenexcoder.computer.onEmergencyStop((payload) => {
         useComputerStore.getState().refreshState().catch(() => {});
         terminateAgent(payload?.reason || 'Emergency stop triggered.');
       })

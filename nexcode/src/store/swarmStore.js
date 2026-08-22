@@ -29,7 +29,7 @@ export const useSwarmStore = create((set, get) => ({
       startedAt: Date.now(),
       completedAt: null
     });
-    const result = await window.nexcode.swarm.startTask(payload);
+    const result = await window.zenexcoder.swarm.startTask(payload);
     set((state) => ({
       taskId: result.taskId || state.taskId,
       active: true
@@ -38,7 +38,7 @@ export const useSwarmStore = create((set, get) => ({
   },
   async halt(taskId = get().taskId) {
     if (taskId) {
-      await window.nexcode.swarm.halt(taskId);
+      await window.zenexcoder.swarm.halt(taskId);
     }
     set({
       active: false,

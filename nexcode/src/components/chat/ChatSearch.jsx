@@ -32,7 +32,7 @@ export default function ChatSearch({ open, onClose }) {
       return;
     }
     const timer = setTimeout(async () => {
-      const backend = await window.nexcode.search.query({ query }).catch(() => ({ chats: [], messages: [], files: [] }));
+      const backend = await window.zenexcoder.search.query({ query }).catch(() => ({ chats: [], messages: [], files: [] }));
       const fileMatches = files
         .filter((file) => file.name.toLowerCase().includes(query.toLowerCase()))
         .slice(0, 20);

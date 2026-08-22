@@ -10,8 +10,8 @@ import {
 } from './localServerHandler.js';
 
 const VALID_GIT_HOOKS = new Set(['pre-commit', 'pre-push']);
-const NEXCODE_BEGIN = '# >>> NexCode managed hook >>>';
-const NEXCODE_END = '# <<< NexCode managed hook <<<';
+const ZENEXCODER_BEGIN = '# >>> ZezenexCoderr managed hook >>>';
+const ZENEXCODER_END = '# <<< ZezenexCoderr managed hook <<<';
 const HOOK_STORE_FILE = 'hooks.json';
 
 let hooksCache = null;
@@ -90,10 +90,10 @@ function hookScript(projectPath, hookType) {
   const project = shellEscapeSingle(projectPath.replaceAll('\\', '/'));
   const hook = shellEscapeSingle(hookType);
   return `#!/bin/sh
-${NEXCODE_BEGIN}
-# This hook is managed by NexCode. If NexCode is not running, it fails open.
+${ZENEXCODER_BEGIN}
+# This hook is managed by ZezenexCoderr. If ZezenexCoderr is not running, it fails open.
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-PORT_FILE="$HOOK_DIR/../.nexcode-port"
+PORT_FILE="$HOOK_DIR/../.zenexcoder-port"
 if [ ! -f "$PORT_FILE" ]; then
   exit 0
 fi
@@ -107,26 +107,26 @@ fi
 PROJECT_PATH='${project}'
 HOOK_TYPE='${hook}'
 PAYLOAD=$(printf '{"event":"%s","hookType":"%s","projectPath":"%s","gitDir":"%s"}' "$HOOK_TYPE" "$HOOK_TYPE" "$PROJECT_PATH" "$HOOK_DIR/..")
-HTTP_CODE=$(curl -sS -o /tmp/nexcode-hook-response-$$.json -w "%{http_code}" --connect-timeout 1 --max-time 185 -H "Content-Type: application/json" -X POST --data "$PAYLOAD" "http://127.0.0.1:$PORT/webhook" 2>/dev/null)
+HTTP_CODE=$(curl -sS -o /tmp/zenexcoder-hook-response-$$.json -w "%{http_code}" --connect-timeout 1 --max-time 185 -H "Content-Type: application/json" -X POST --data "$PAYLOAD" "http://127.0.0.1:$PORT/webhook" 2>/dev/null)
 CURL_STATUS=$?
-rm -f /tmp/nexcode-hook-response-$$.json
+rm -f /tmp/zenexcoder-hook-response-$$.json
 if [ "$CURL_STATUS" -ne 0 ]; then
   exit 0
 fi
 if [ "$HTTP_CODE" = "400" ]; then
-  echo "NexCode blocked ${hookType}."
+  echo "ZezenexCoderr blocked ${hookType}."
   exit 1
 fi
 exit 0
-${NEXCODE_END}
+${ZENEXCODER_END}
 `;
 }
 
 async function writePortFile(projectPath) {
   const gitDir = await resolveGitDir(projectPath);
   const port = getHookServerPort();
-  if (!port) throw new Error('NexCode hook server is not running.');
-  await fs.writeFile(path.join(gitDir, '.nexcode-port'), String(port), 'utf8');
+  if (!port) throw new Error('ZezenexCoderr hook server is not running.');
+  await fs.writeFile(path.join(gitDir, '.zenexcoder-port'), String(port), 'utf8');
   return { gitDir, port };
 }
 
@@ -135,12 +135,12 @@ async function installGitHook(projectPath, hookType) {
   const { gitDir, port } = await writePortFile(projectPath);
   const hooksDir = path.join(gitDir, 'hooks');
   const hookPath = path.join(hooksDir, hookType);
-  const backupPath = `${hookPath}.nexcode-backup`;
+  const backupPath = `${hookPath}.zenexcoder-backup`;
   await fs.mkdir(hooksDir, { recursive: true });
 
   if (await exists(hookPath)) {
     const existing = await fs.readFile(hookPath, 'utf8').catch(() => '');
-    if (!existing.includes(NEXCODE_BEGIN) && !(await exists(backupPath))) {
+    if (!existing.includes(ZENEXCODER_BEGIN) && !(await exists(backupPath))) {
       await fs.copyFile(hookPath, backupPath);
     }
   }
@@ -154,12 +154,12 @@ async function removeGitHook(projectPath, hookType) {
   if (!VALID_GIT_HOOKS.has(hookType)) throw new Error(`Unsupported Git hook "${hookType}".`);
   const gitDir = await resolveGitDir(projectPath);
   const hookPath = path.join(gitDir, 'hooks', hookType);
-  const backupPath = `${hookPath}.nexcode-backup`;
+  const backupPath = `${hookPath}.zenexcoder-backup`;
   if (!(await exists(hookPath))) return { ok: true, removed: false };
 
   const existing = await fs.readFile(hookPath, 'utf8').catch(() => '');
-  if (!existing.includes(NEXCODE_BEGIN)) {
-    return { ok: false, message: 'Hook is not managed by NexCode.' };
+  if (!existing.includes(ZENEXCODER_BEGIN)) {
+    return { ok: false, message: 'Hook is not managed by ZezenexCoderr.' };
   }
   if (await exists(backupPath)) {
     await fs.copyFile(backupPath, hookPath);
@@ -180,7 +180,7 @@ async function listInstalledGitHooks(projectPath) {
       const hookPath = path.join(gitDir, 'hooks', hookType);
       const script = await fs.readFile(hookPath, 'utf8').catch(() => '');
       result[hookType] = {
-        installed: script.includes(NEXCODE_BEGIN),
+        installed: script.includes(ZENEXCODER_BEGIN),
         hookPath
       };
     }
@@ -206,7 +206,7 @@ export async function cleanupHookPortFiles(projectPaths = null) {
   for (const projectPath of paths.filter(Boolean)) {
     try {
       const gitDir = await resolveGitDir(projectPath);
-      await fs.rm(path.join(gitDir, '.nexcode-port'), { force: true });
+      await fs.rm(path.join(gitDir, '.zenexcoder-port'), { force: true });
     } catch {
       // Ignore cleanup failures; Git hooks fail open if the file is missing.
     }

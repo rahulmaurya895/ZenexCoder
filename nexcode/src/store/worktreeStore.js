@@ -17,7 +17,7 @@ export const useWorktreeStore = create((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const result = await window.nexcode.git.worktreeList(projectPath);
+      const result = await window.zenexcoder.git.worktreeList(projectPath);
       const worktrees = result.worktrees || [];
       set({ worktrees, activeWorktreePath: projectPath, loading: false });
       return worktrees;
@@ -29,25 +29,25 @@ export const useWorktreeStore = create((set, get) => ({
   async add(payload) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.worktreeAdd(projectPath, payload);
+    const result = await window.zenexcoder.git.worktreeAdd(projectPath, payload);
     await get().refresh(projectPath);
     return result;
   },
   async remove(worktreePath, options = {}) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.worktreeRemove(projectPath, worktreePath, options);
+    const result = await window.zenexcoder.git.worktreeRemove(projectPath, worktreePath, options);
     await get().refresh(projectPath);
     return result;
   },
   async prune() {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.worktreePrune(projectPath);
+    const result = await window.zenexcoder.git.worktreePrune(projectPath);
     await get().refresh(projectPath);
     return result;
   },
-  async openInNexCode(worktreePath) {
+  async openInZezenexCoderr(worktreePath) {
     if (!worktreePath) return null;
     // TODO: Phase 2B Part 9 may allow opening this in a separate popout window instead of switching the current window.
     const opened = await useProjectStore.getState().openProject(worktreePath);

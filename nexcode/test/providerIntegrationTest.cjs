@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const profileDirectories = [
-  path.join(process.env.APPDATA, 'nexcode'),
-  path.join(process.env.APPDATA, 'NexCode-TestProfile')
+  path.join(process.env.APPDATA, 'zenexcoder'),
+  path.join(process.env.APPDATA, 'ZezenexCoderr-TestProfile')
 ];
 const userDataDir = profileDirectories[0];
 
@@ -66,7 +66,7 @@ app.whenReady().then(async () => {
   try {
     let settings = {};
     for (const profileDirectory of profileDirectories) {
-      const settingsPath = path.join(profileDirectory, 'nexcode-secure.json');
+      const settingsPath = path.join(profileDirectory, 'zenexcoder-secure.json');
       if (!fs.existsSync(settingsPath)) continue;
       const raw = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       const candidate = decryptValue(raw.settings) || {};

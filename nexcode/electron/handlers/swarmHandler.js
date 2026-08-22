@@ -539,7 +539,7 @@ function approvalForConsensus({ taskId, handoff, executionPlan, payload }) {
       summary,
       '',
       `Plan steps: ${executionPlan.steps.length}`,
-      'Approve to start the normal NexCode agent approval/progress flow.'
+      'Approve to start the normal ZezenexCoderr agent approval/progress flow.'
     ].join('\n'),
     riskLevel: executionPlan.steps.some((step) => ['file_delete', 'git_push', 'git_destructive'].includes(step.actionType)) ? 'high' : 'medium',
     executionPlan,

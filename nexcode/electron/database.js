@@ -145,7 +145,7 @@ function trimAuditTables() {
 export function initDatabase() {
   const dbDir = path.join(app.getPath('userData'), 'database');
   fs.mkdirSync(dbDir, { recursive: true });
-  db = new Database(path.join(dbDir, 'nexcode.sqlite'));
+  db = new Database(path.join(dbDir, 'zenexcoder.sqlite'));
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 

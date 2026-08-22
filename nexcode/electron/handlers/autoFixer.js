@@ -45,7 +45,7 @@ function decryptedPayload(payload) {
 }
 
 function loadAppSettings() {
-  const storeFile = path.join(app.getPath('userData'), 'nexcode-secure.json');
+  const storeFile = path.join(app.getPath('userData'), 'zenexcoder-secure.json');
   try {
     const store = JSON.parse(fsSync.readFileSync(storeFile, 'utf8'));
     return decryptedPayload(store.settings) || {};
@@ -302,7 +302,7 @@ async function createHealingWorktree(incident, settings = {}, job) {
 
   const branchBase = `fix-sentry-issue-${safeSlug(incident.externalId || incident.id)}`;
   const branchName = branchBase;
-  const worktreeRoot = path.join(projectPath, '.nexcode_worktrees');
+  const worktreeRoot = path.join(projectPath, '.zenexcoder_worktrees');
   await fs.mkdir(worktreeRoot, { recursive: true });
   let worktreePath = path.join(worktreeRoot, branchBase);
   if (fsSync.existsSync(worktreePath)) {
@@ -337,7 +337,7 @@ async function createHealingWorktree(incident, settings = {}, job) {
 function buildPrompt(incident, attempt, feedback = '') {
   return [
     'You are debugging a real production crash. Do not invent a pull request, deployment, or verification result.',
-    'Analyze the stack trace, find the root cause in this worktree, and produce executable NexCode steps.',
+    'Analyze the stack trace, find the root cause in this worktree, and produce executable ZezenexCoderr steps.',
     'The Coder must include complete file contents for every changed file.',
     'The QA/SecOps personas must include at least one unit test file change that fails without the fix and passes with it.',
     'End only when the JSON handoff_to is "user_approval" and execution_plan.steps contains file_write steps for the fix and tests, plus test commands when known.',
@@ -384,12 +384,12 @@ function prBody(incident, consensus, testCommands = []) {
     '',
     `**Root Cause:** ${consensus.summary || consensus.handoff?.analysis || 'See code changes in this PR.'}`,
     '',
-    `**Fix:** ${consensus.handoff?.instructions || 'Implemented by NexCode self-healing swarm.'}`,
+    `**Fix:** ${consensus.handoff?.instructions || 'Implemented by ZezenexCoderr self-healing swarm.'}`,
     '',
     `**Tests Added:** Yes`,
     testCommands.length ? `**Verification:** ${testCommands.join(', ')}` : '',
     '',
-    'NexCode created this pull request for human review. It did not merge or deploy the change.'
+    'ZezenexCoderr created this pull request for human review. It did not merge or deploy the change.'
   ].filter(Boolean).join('\n');
 }
 
@@ -439,7 +439,7 @@ async function pushAndCreatePr(incident, context, consensus, testCommands, job) 
 
 async function cleanupFailedWorktree(incident, job) {
   if (!job.projectPath || !job.worktreePath) return;
-  const expectedRoot = path.join(job.projectPath, '.nexcode_worktrees');
+  const expectedRoot = path.join(job.projectPath, '.zenexcoder_worktrees');
   if (!isInside(expectedRoot, job.worktreePath)) return;
   await gitWorktreeRemove(job.projectPath, job.worktreePath, { force: true }).catch(() => {});
   emitStatus(incident.id, 'cleanup', 'done', 'Removed failed healing worktree.', {

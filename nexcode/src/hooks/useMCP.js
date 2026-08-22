@@ -6,7 +6,7 @@ let disposeStatus = null;
 
 function ensureMcpListener() {
   if (!disposeStatus) {
-    disposeStatus = window.nexcode.mcp.onStatusChanged((payload) => {
+    disposeStatus = window.zenexcoder.mcp.onStatusChanged((payload) => {
       useMCPStore.getState().applyStatus(payload);
     });
   }

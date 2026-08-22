@@ -17,8 +17,8 @@ export default function PipelineDashboard() {
   useEffect(() => {
     state.load().catch(() => {});
     const disposers = [
-      window.nexcode.cicd.onStatusUpdate((payload) => state.applyStatus(payload)),
-      window.nexcode.cicd.onLogsStream((payload) => state.applyLog(payload))
+      window.zenexcoder.cicd.onStatusUpdate((payload) => state.applyStatus(payload)),
+      window.zenexcoder.cicd.onLogsStream((payload) => state.applyLog(payload))
     ];
     return () => disposers.forEach((dispose) => dispose());
   }, []);
@@ -131,7 +131,7 @@ export default function PipelineDashboard() {
                 ))}
               </div>
             ) : (
-              <div className="incident-empty">Generate IaC to preview files in .nexcode/deploy.</div>
+              <div className="incident-empty">Generate IaC to preview files in .zenexcoder/deploy.</div>
             )}
           </div>
         </section>

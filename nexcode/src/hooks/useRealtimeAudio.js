@@ -93,17 +93,17 @@ export function useRealtimeAudio() {
   const outputSourcesRef = useRef(new Set());
 
   useEffect(() => {
-    if (!window.nexcode?.voice) {
+    if (!window.zenexcoder?.voice) {
       return undefined;
     }
     const disposers = [
-      window.nexcode.voice.onStateChange((payload) => applyRemoteState(payload)),
-      window.nexcode.voice.onTranscriptDelta((payload) => addTranscriptDelta(payload)),
-      window.nexcode.voice.onToolCall((payload) => addToolCall(payload)),
-      window.nexcode.voice.onPcmChunk((payload) => playIncomingAudio(payload)),
-      window.nexcode.voice.onPlaybackClear(() => clearPlayback())
+      window.zenexcoder.voice.onStateChange((payload) => applyRemoteState(payload)),
+      window.zenexcoder.voice.onTranscriptDelta((payload) => addTranscriptDelta(payload)),
+      window.zenexcoder.voice.onToolCall((payload) => addToolCall(payload)),
+      window.zenexcoder.voice.onPcmChunk((payload) => playIncomingAudio(payload)),
+      window.zenexcoder.voice.onPlaybackClear(() => clearPlayback())
     ];
-    window.nexcode.voice.getState().then((state) => applyRemoteState(state)).catch(() => {});
+    window.zenexcoder.voice.getState().then((state) => applyRemoteState(state)).catch(() => {});
     return () => disposers.forEach((dispose) => dispose());
   }, [addToolCall, addTranscriptDelta, applyRemoteState]);
 
@@ -118,7 +118,7 @@ export function useRealtimeAudio() {
     }
     captureBufferRef.current = [];
     captureFramesRef.current = 0;
-    window.nexcode.voice.sendPcmChunk({ pcmData: bufferToBase64(merged.buffer), sampleRate: INPUT_SAMPLE_RATE });
+    window.zenexcoder.voice.sendPcmChunk({ pcmData: bufferToBase64(merged.buffer), sampleRate: INPUT_SAMPLE_RATE });
   }
 
   async function stopCapture() {
@@ -257,7 +257,7 @@ export function useRealtimeAudio() {
     startCapture().catch((error) => {
       if (!cancelled) {
         useVoiceStore.setState({ connected: false, connectionState: 'error', error: error.message });
-        window.nexcode.notify.show({ title: 'Microphone error', body: error.message, type: 'error' }).catch(() => {});
+        window.zenexcoder.notify.show({ title: 'Microphone error', body: error.message, type: 'error' }).catch(() => {});
       }
     });
     return () => {

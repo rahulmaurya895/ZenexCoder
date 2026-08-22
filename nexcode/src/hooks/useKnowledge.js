@@ -15,7 +15,7 @@ export function useKnowledge() {
     useKnowledgeStore.getState().loadSettings().then(() => {
       useKnowledgeStore.getState().refreshStats().catch(() => {});
     });
-    const dispose = window.nexcode.vector.onSyncProgress((payload) => {
+    const dispose = window.zenexcoder.vector.onSyncProgress((payload) => {
       useKnowledgeStore.getState().applyProgress(payload);
       if (payload.done) {
         useKnowledgeStore.getState().refreshStats().catch(() => {});

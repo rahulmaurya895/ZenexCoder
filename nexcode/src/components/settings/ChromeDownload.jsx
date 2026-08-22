@@ -12,9 +12,9 @@ export default function ChromeDownload() {
     setInstalling(true);
     try {
       // Install Playwright Chrome channel
-      await window.nexcode.app.runCommand('npx playwright install chrome');
+      await window.zenexcoder.app.runCommand('npx playwright install chrome');
       // Retrieve Chrome executable path via Playwright API
-      const result = await window.nexcode.app.runCommand(`node -e "console.log(require('playwright').chromium.executablePath())"`);
+      const result = await window.zenexcoder.app.runCommand(`node -e "console.log(require('playwright').chromium.executablePath())"`);
       const chromePath = (result?.stdout || '').trim();
       if (chromePath) {
         await saveSettings({ appSettings: { ...appSettings, chromePath } });

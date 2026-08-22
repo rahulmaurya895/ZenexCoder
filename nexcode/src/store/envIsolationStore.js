@@ -5,7 +5,7 @@ const defaultState = {
   running: false,
   projectPath: '',
   bridgeDir: '',
-  sandboxProjectPath: 'C:\\NexCodeProject',
+  sandboxProjectPath: 'C:\\ZezenexCoderrProject',
   lastWsbPath: '',
   lastError: '',
   feature: {
@@ -39,21 +39,21 @@ export const useEnvIsolationStore = create((set, get) => ({
   error: '',
   async load() {
     const [state, feature] = await Promise.all([
-      window.nexcode.sandbox.state(),
-      window.nexcode.sandbox.featureStatus().catch((error) => ({ ...defaultState.feature, message: error.message }))
+      window.zenexcoder.sandbox.state(),
+      window.zenexcoder.sandbox.featureStatus().catch((error) => ({ ...defaultState.feature, message: error.message }))
     ]);
     set({ ...normalizeState(state), feature, error: '', loading: false });
     return { ...state, feature };
   },
   async refreshFeature() {
-    const feature = await window.nexcode.sandbox.featureStatus();
+    const feature = await window.zenexcoder.sandbox.featureStatus();
     set({ feature, error: '' });
     return feature;
   },
   async enableFeature() {
     set({ loading: true, error: '' });
     try {
-      const result = await window.nexcode.sandbox.enableFeature();
+      const result = await window.zenexcoder.sandbox.enableFeature();
       set({
         feature: result.status || result.feature || get().feature,
         enableResult: result,
@@ -62,7 +62,7 @@ export const useEnvIsolationStore = create((set, get) => ({
       });
       return result;
     } catch (error) {
-      const feature = await window.nexcode.sandbox.featureStatus().catch(() => get().feature);
+      const feature = await window.zenexcoder.sandbox.featureStatus().catch(() => get().feature);
       set({ feature, loading: false, error: error.message });
       throw error;
     }
@@ -70,7 +70,7 @@ export const useEnvIsolationStore = create((set, get) => ({
   async setIsolation(isolation) {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.sandbox.setIsolation(isolation);
+      const state = await window.zenexcoder.sandbox.setIsolation(isolation);
       set({ ...normalizeState(state), loading: false, error: '' });
       return state;
     } catch (error) {
@@ -81,7 +81,7 @@ export const useEnvIsolationStore = create((set, get) => ({
   async start(projectPath) {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.sandbox.start(projectPath);
+      const state = await window.zenexcoder.sandbox.start(projectPath);
       set({ ...normalizeState(state), loading: false, error: '' });
       return state;
     } catch (error) {
@@ -92,7 +92,7 @@ export const useEnvIsolationStore = create((set, get) => ({
   async stop() {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.sandbox.stop();
+      const state = await window.zenexcoder.sandbox.stop();
       set({ ...normalizeState(state), loading: false, error: '' });
       return state;
     } catch (error) {

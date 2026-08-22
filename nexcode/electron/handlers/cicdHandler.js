@@ -62,7 +62,7 @@ async function writeIacFiles(projectPath, provider) {
   const packageJson = await readJson(path.join(projectPath, 'package.json'), {});
   const envExample = await maybeRead(path.join(projectPath, '.env.example'));
   const plan = generateIaC({ provider, packageJson, envExample, projectName: path.basename(projectPath), healthPath: '/health' });
-  const deployDir = path.join(projectPath, '.nexcode', 'deploy');
+  const deployDir = path.join(projectPath, '.zenexcoder', 'deploy');
   await fs.mkdir(deployDir, { recursive: true });
   for (const file of plan.files) {
     await fs.writeFile(path.join(deployDir, file.fileName), file.content, 'utf8');
@@ -138,7 +138,7 @@ async function protectGitState(projectPath, liveDeploy) {
   }
   emitLog('git', `Captured rollback ref ${info.head.slice(0, 10)}.`);
   if (liveDeploy && info.dirty) {
-    const message = `NexCode CI/CD autostash ${new Date().toISOString()}`;
+    const message = `ZezenexCoderr CI/CD autostash ${new Date().toISOString()}`;
     await run('git', ['stash', 'push', '-u', '-m', message], { cwd: projectPath, timeoutMs: 60000 });
     emitLog('git', 'Dirty working tree stashed before live deploy.');
     return { ...info, stashed: true, stashMessage: message };
@@ -265,7 +265,7 @@ export async function rollbackDeployment(deploymentId, reason = 'manual') {
   const result = await rollbackWithProvider({
     provider: deployment.provider,
     projectPath: deployment.projectPath,
-    deployDir: path.join(deployment.projectPath, '.nexcode', 'deploy'),
+    deployDir: path.join(deployment.projectPath, '.zenexcoder', 'deploy'),
     dryRun: deployment.dryRun,
     env,
     onLog: (line, level) => line && emitLog('rollback', line, level === 'stderr' ? 'warning' : 'info')

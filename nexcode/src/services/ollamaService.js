@@ -39,21 +39,21 @@ export const RECOMMENDED_MODELS = [
 ];
 
 export const ollamaService = {
-  checkOllamaInstalled: () => window.nexcode.ollama.check(),
+  checkOllamaInstalled: () => window.zenexcoder.ollama.check(),
   checkOllamaRunning: async () => {
-    const result = await window.nexcode.ollama.check();
+    const result = await window.zenexcoder.ollama.check();
     return { running: result.running, version: result.version };
   },
-  startOllama: () => window.nexcode.ollama.start(),
-  stopOllama: () => window.nexcode.ollama.stop(),
-  listModels: () => window.nexcode.ollama.models(),
+  startOllama: () => window.zenexcoder.ollama.start(),
+  stopOllama: () => window.zenexcoder.ollama.stop(),
+  listModels: () => window.zenexcoder.ollama.models(),
   pullModel: (modelName, onProgress, onDone, onError) =>
-    window.nexcode.ollama.pull(modelName, { onProgress, onDone, onError }),
-  deleteModel: (modelName) => window.nexcode.ollama.deleteModel(modelName),
+    window.zenexcoder.ollama.pull(modelName, { onProgress, onDone, onError }),
+  deleteModel: (modelName) => window.zenexcoder.ollama.deleteModel(modelName),
   runPrompt: (modelName, prompt, onToken, options = {}) =>
-    window.nexcode.ollama.runPrompt({ modelName, prompt, options }, { onToken }),
+    window.zenexcoder.ollama.runPrompt({ modelName, prompt, options }, { onToken }),
   runChat: (modelName, messages, onToken, options = {}) =>
-    window.nexcode.ollama.runChat({ modelName, messages, options }, { onToken }),
-  getRunningModels: () => window.nexcode.ollama.ps(),
-  loadModel: (modelName) => window.nexcode.ollama.loadModel(modelName)
+    window.zenexcoder.ollama.runChat({ modelName, messages, options }, { onToken }),
+  getRunningModels: () => window.zenexcoder.ollama.ps(),
+  loadModel: (modelName) => window.zenexcoder.ollama.loadModel(modelName)
 };

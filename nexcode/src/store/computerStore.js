@@ -26,34 +26,34 @@ export const useComputerStore = create((set, get) => ({
     set((state) => ({ logs: [...state.logs.filter((item) => item.id !== entry.id), entry].slice(-200) }));
   },
   async refreshState() {
-    const state = await window.nexcode.computer.state();
+    const state = await window.zenexcoder.computer.state();
     get().applyState(state);
     return state;
   },
   async setEnabled(enabled) {
-    const state = await window.nexcode.computer.setEnabled(enabled);
+    const state = await window.zenexcoder.computer.setEnabled(enabled);
     get().applyState(state);
     return state;
   },
   async setUnattended(allowUnattended) {
-    const state = await window.nexcode.computer.setUnattended(allowUnattended);
+    const state = await window.zenexcoder.computer.setUnattended(allowUnattended);
     get().applyState(state);
     return state;
   },
   async unlock() {
-    const state = await window.nexcode.computer.unlock();
+    const state = await window.zenexcoder.computer.unlock();
     get().applyState(state);
     return state;
   },
   async lock(reason = 'manual') {
-    const state = await window.nexcode.computer.lock(reason);
+    const state = await window.zenexcoder.computer.lock(reason);
     get().applyState(state);
     return state;
   },
   async getScreen() {
     set({ error: '' });
     try {
-      const screen = await window.nexcode.computer.getScreen();
+      const screen = await window.zenexcoder.computer.getScreen();
       set({ lastScreen: screen });
       return screen;
     } catch (error) {

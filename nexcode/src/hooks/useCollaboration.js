@@ -7,15 +7,15 @@ export function useCollaboration() {
   const activeFile = useProjectStore((state) => state.getActiveFile?.());
 
   useEffect(() => {
-    if (!window.nexcode?.collab || !window.nexcode?.learning) {
+    if (!window.zenexcoder?.collab || !window.zenexcoder?.learning) {
       return undefined;
     }
     const disposers = [
-      window.nexcode.collab.onPeersUpdated((payload) => useCollaborationStore.getState().applyPeers(payload)),
-      window.nexcode.collab.onRuleSynced((payload) => useCollaborationStore.getState().applyRuleSynced(payload)),
-      window.nexcode.collab.onPresenceUpdate((payload) => useCollaborationStore.getState().applyPresence(payload)),
-      window.nexcode.learning.onRulesUpdated((payload) => useLearningStore.getState().applyRuleUpdate(payload)),
-      window.nexcode.learning.onAnalysisComplete((payload) => useLearningStore.getState().applyAnalysis(payload))
+      window.zenexcoder.collab.onPeersUpdated((payload) => useCollaborationStore.getState().applyPeers(payload)),
+      window.zenexcoder.collab.onRuleSynced((payload) => useCollaborationStore.getState().applyRuleSynced(payload)),
+      window.zenexcoder.collab.onPresenceUpdate((payload) => useCollaborationStore.getState().applyPresence(payload)),
+      window.zenexcoder.learning.onRulesUpdated((payload) => useLearningStore.getState().applyRuleUpdate(payload)),
+      window.zenexcoder.learning.onAnalysisComplete((payload) => useLearningStore.getState().applyAnalysis(payload))
     ];
     useCollaborationStore.getState().load().catch(() => {});
     useLearningStore.getState().load().catch(() => {});

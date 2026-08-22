@@ -17,8 +17,8 @@ export const useCollaborationStore = create((set, get) => ({
 
   async load() {
     const [collab, vault] = await Promise.all([
-      window.nexcode.collab.list().catch(() => ({ peers: [], status: {} })),
-      window.nexcode.collab.vaultStatus({ projectPath: get().projectPath() }).catch((error) => ({ ok: false, error: error.message }))
+      window.zenexcoder.collab.list().catch(() => ({ peers: [], status: {} })),
+      window.zenexcoder.collab.vaultStatus({ projectPath: get().projectPath() }).catch((error) => ({ ok: false, error: error.message }))
     ]);
     set({
       peers: collab.peers || [],
@@ -31,7 +31,7 @@ export const useCollaborationStore = create((set, get) => ({
   async connect() {
     set({ loading: true, error: '' });
     try {
-      const result = await window.nexcode.collab.connect({ projectPath: get().projectPath() });
+      const result = await window.zenexcoder.collab.connect({ projectPath: get().projectPath() });
       set({
         connected: true,
         peers: result.peers || [],
@@ -47,24 +47,24 @@ export const useCollaborationStore = create((set, get) => ({
   },
 
   async disconnect() {
-    await window.nexcode.collab.disconnect();
+    await window.zenexcoder.collab.disconnect();
     set((state) => ({ connected: false, status: { ...state.status, connected: false } }));
   },
 
   async setVaultSecret(secret) {
-    const vault = await window.nexcode.collab.setVaultSecret({ projectPath: get().projectPath(), secret });
+    const vault = await window.zenexcoder.collab.setVaultSecret({ projectPath: get().projectPath(), secret });
     set({ vault });
     return vault;
   },
 
   async syncRules() {
-    const result = await window.nexcode.collab.syncRules();
+    const result = await window.zenexcoder.collab.syncRules();
     set({ status: result.status || get().status });
     return result;
   },
 
   async muteOrigin(originNodeId, muted = true) {
-    await window.nexcode.collab.muteOrigin({ originNodeId, muted });
+    await window.zenexcoder.collab.muteOrigin({ originNodeId, muted });
     set((state) => ({
       peers: state.peers.map((peer) => (peer.nodeId === originNodeId ? { ...peer, muted } : peer))
     }));
@@ -72,7 +72,7 @@ export const useCollaborationStore = create((set, get) => ({
   },
 
   updatePresence(file, status = 'Coding') {
-    return window.nexcode.collab.updatePresence({ file, status }).catch(() => {});
+    return window.zenexcoder.collab.updatePresence({ file, status }).catch(() => {});
   },
 
   applyPeers(payload = {}) {

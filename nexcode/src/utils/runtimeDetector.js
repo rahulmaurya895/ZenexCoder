@@ -4,7 +4,7 @@ export async function detectRuntimes(projectPath, { force = false } = {}) {
   if (!force && cachedRuntimes) {
     return cachedRuntimes;
   }
-  cachedRuntimes = await window.nexcode.runtime.detect({ projectPath, force });
+  cachedRuntimes = await window.zenexcoder.runtime.detect({ projectPath, force });
   return cachedRuntimes;
 }
 

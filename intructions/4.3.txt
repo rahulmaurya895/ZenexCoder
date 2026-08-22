@@ -1,5 +1,5 @@
 ================================================================================
-   NEXCODE — PHASE 4 (PART 3 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZENEXCODER — PHASE 4 (PART 3 of 5) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "CI/CD AUTOPILOT" (Self-Deploying Infrastructure)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -31,7 +31,7 @@ CD (Continuous Deployment) = Pushing to production.
 Autopilot = The AI does all this for you.
 
 Usually, you need DevOps engineers to write complex YAML files for GitHub Actions.
-With NexCode, you just say: "Deploy this Node.js app to Vercel."
+With ZezenexCoderr, you just say: "Deploy this Node.js app to Vercel."
 The AI generates the config files, creates the infrastructure, sets up the 
 pipeline, and handles the deployment. If the deployment fails (e.g., 500 Error), 
 it detects the spike in errors and rolls back the deployment instantly. 
@@ -70,7 +70,7 @@ Goal: Automatically describe the infrastructure needed.
     1. AI analyzes `package.json` to detect runtime (Node, Python, etc.).
     2. AI scans for environment variables (e.g., `.env.example`).
     3. Generate a `main.tf` (Terraform) or `serverless.yml` config file inside 
-       the project's `.nexcode/deploy/` folder.
+       the project's `.zenexcoder/deploy/` folder.
 
 ================================================================================
 SECTION 3: CLOUD PIPELINE ORCHESTRATOR

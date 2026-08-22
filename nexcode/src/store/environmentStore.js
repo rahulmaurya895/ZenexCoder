@@ -56,7 +56,7 @@ export const useEnvironmentStore = create((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const list = await window.nexcode.env.list(path);
+      const list = await window.zenexcoder.env.list(path);
       set((state) => ({
         environments: { ...state.environments, [path]: list },
         activeEnvId: { ...state.activeEnvId, [path]: list.find((env) => env.isActive)?.id || null },
@@ -69,23 +69,23 @@ export const useEnvironmentStore = create((set, get) => ({
     }
   },
   async createEnv(path, payload) {
-    const env = await window.nexcode.env.create({ projectPath: path, ...payload });
+    const env = await window.zenexcoder.env.create({ projectPath: path, ...payload });
     await get().refresh(path);
     return env;
   },
   async updateEnv(path, envId, patch) {
-    const env = await window.nexcode.env.update(path, envId, patch);
+    const env = await window.zenexcoder.env.update(path, envId, patch);
     await get().refresh(path);
     return env;
   },
   async deleteEnv(path, envId) {
-    const result = await window.nexcode.env.delete(path, envId);
+    const result = await window.zenexcoder.env.delete(path, envId);
     if (result?.error) return result;
     await get().refresh(path);
     return result;
   },
   async activateEnv(path, envId) {
-    const env = await window.nexcode.env.activate(path, envId);
+    const env = await window.zenexcoder.env.activate(path, envId);
     await get().refresh(path);
     return env;
   },

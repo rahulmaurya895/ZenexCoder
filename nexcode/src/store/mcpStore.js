@@ -21,8 +21,8 @@ export const useMCPStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const [servers, states] = await Promise.all([
-        window.nexcode.mcp.list(),
-        window.nexcode.mcp.states().catch(() => ({}))
+        window.zenexcoder.mcp.list(),
+        window.zenexcoder.mcp.states().catch(() => ({}))
       ]);
       set({
         servers,
@@ -40,17 +40,17 @@ export const useMCPStore = create((set, get) => ({
     }
   },
   async addServer(config) {
-    const server = await window.nexcode.mcp.add(config);
+    const server = await window.zenexcoder.mcp.add(config);
     await get().loadServers();
     return server;
   },
   async updateServer(id, patch) {
-    const server = await window.nexcode.mcp.update(id, patch);
+    const server = await window.zenexcoder.mcp.update(id, patch);
     await get().loadServers();
     return server;
   },
   async deleteServer(id) {
-    const result = await window.nexcode.mcp.delete(id);
+    const result = await window.zenexcoder.mcp.delete(id);
     set((state) => {
       const { [id]: _removedStatus, ...connectionStates } = state.connectionStates;
       const { [id]: _removedError, ...serverErrors } = state.serverErrors;
@@ -70,17 +70,17 @@ export const useMCPStore = create((set, get) => ({
   },
   async connectServer(id) {
     get().applyStatus({ id, status: 'connecting', error: '', tools: [], resources: [], resourceTemplates: [] });
-    const status = await window.nexcode.mcp.connect(id);
+    const status = await window.zenexcoder.mcp.connect(id);
     get().applyStatus(status);
     return status;
   },
   async disconnectServer(id) {
-    const status = await window.nexcode.mcp.disconnect(id);
+    const status = await window.zenexcoder.mcp.disconnect(id);
     get().applyStatus(status);
     return status;
   },
   async callTool(serverId, toolName, args = {}) {
-    return window.nexcode.mcp.callTool(serverId, toolName, args);
+    return window.zenexcoder.mcp.callTool(serverId, toolName, args);
   },
   applyStatus(payload = {}) {
     if (!payload.id) return;

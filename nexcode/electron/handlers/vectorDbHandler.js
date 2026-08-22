@@ -12,7 +12,7 @@ const TABLES = {
 let dbState = null;
 
 function dataRoot() {
-  return path.join(app.getPath('userData'), '.nexcode_data', 'vector_db');
+  return path.join(app.getPath('userData'), '.zenexcoder_data', 'vector_db');
 }
 
 function fallbackPath() {

@@ -32,22 +32,22 @@ export default function SettingsPanel() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'nexcode-settings.json';
+    anchor.download = 'zenexcoder-settings.json';
     anchor.click();
     URL.revokeObjectURL(url);
   }
 
   async function importSettings() {
-    const [filePath] = await window.nexcode.file.openDialog({ filters: [{ name: 'JSON', extensions: ['json'] }] });
+    const [filePath] = await window.zenexcoder.file.openDialog({ filters: [{ name: 'JSON', extensions: ['json'] }] });
     if (!filePath) return;
-    const result = await window.nexcode.file.read(filePath);
+    const result = await window.zenexcoder.file.read(filePath);
     await saveSettings(JSON.parse(result.content));
   }
 
   async function runDiagnostics() {
     setDiagnosticsLoading(true);
     try {
-      const report = await window.nexcode.app.runDiagnostics({ projectPath });
+      const report = await window.zenexcoder.app.runDiagnostics({ projectPath });
       setDiagnostics(report);
     } finally {
       setDiagnosticsLoading(false);

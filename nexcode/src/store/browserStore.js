@@ -31,7 +31,7 @@ export const useBrowserStore = create((set, get) => ({
     }));
   },
   async refreshState() {
-    const state = await window.nexcode.browser.state();
+    const state = await window.zenexcoder.browser.state();
     set((current) => ({
       ...current,
       ...state,
@@ -42,7 +42,7 @@ export const useBrowserStore = create((set, get) => ({
   async start() {
     set({ isLoading: true, error: '' });
     try {
-      const state = await window.nexcode.browser.start();
+      const state = await window.zenexcoder.browser.start();
       set((current) => ({ ...current, ...state, isLoading: false, base64Image: state.base64Image ?? current.base64Image }));
       return state;
     } catch (error) {
@@ -51,14 +51,14 @@ export const useBrowserStore = create((set, get) => ({
     }
   },
   async stop() {
-    const state = await window.nexcode.browser.stop();
+    const state = await window.zenexcoder.browser.stop();
     set({ ...initialState, ...state });
     return state;
   },
   async navigate(url) {
     set({ isLoading: true, error: '' });
     try {
-      const result = await window.nexcode.browser.navigate(url);
+      const result = await window.zenexcoder.browser.navigate(url);
       set((state) => ({ ...state, ...result, dom: result.dom || state.dom, isLoading: false }));
       return result;
     } catch (error) {
@@ -67,24 +67,24 @@ export const useBrowserStore = create((set, get) => ({
     }
   },
   async back() {
-    const result = await window.nexcode.browser.back();
+    const result = await window.zenexcoder.browser.back();
     set((state) => ({ ...state, ...result, dom: result.dom || state.dom }));
     return result;
   },
   async forward() {
-    const result = await window.nexcode.browser.forward();
+    const result = await window.zenexcoder.browser.forward();
     set((state) => ({ ...state, ...result, dom: result.dom || state.dom }));
     return result;
   },
   async reload() {
-    const result = await window.nexcode.browser.reload();
+    const result = await window.zenexcoder.browser.reload();
     set((state) => ({ ...state, ...result, dom: result.dom || state.dom }));
     return result;
   },
   async readPage() {
     set({ isLoading: true, error: '' });
     try {
-      const dom = await window.nexcode.browser.getDOM();
+      const dom = await window.zenexcoder.browser.getDOM();
       set({ dom, isLoading: false });
       return dom;
     } catch (error) {

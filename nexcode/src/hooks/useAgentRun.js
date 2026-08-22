@@ -8,22 +8,22 @@ let listenerUsers = 0;
 let disposers = [];
 
 function ensureAgentListeners() {
-  if (!window.nexcode?.agent) return;
+  if (!window.zenexcoder?.agent) return;
   if (!disposers.length) {
     disposers = [
-      window.nexcode.agent.onStepUpdate(({ step }) => useAgentStore.getState().updateStep(step)),
-      window.nexcode.agent.onRunUpdate((payload) => {
+      window.zenexcoder.agent.onStepUpdate(({ step }) => useAgentStore.getState().updateStep(step)),
+      window.zenexcoder.agent.onRunUpdate((payload) => {
         if (payload.plan) useAgentStore.getState().hydrateRun(payload.plan);
         if (payload.runState) useAgentStore.getState().setRunState(payload.runState);
         if (['running', 'paused'].includes(payload.runState)) {
           useAppStore.getState().setRightPanelOpen(true);
         }
       }),
-      window.nexcode.agent.onApprovalPending((approval) => {
+      window.zenexcoder.agent.onApprovalPending((approval) => {
         useAgentStore.getState().addApproval(approval);
         useAppStore.getState().setRightPanelOpen(true);
       }),
-      window.nexcode.agent.onApprovalResolved((payload) => {
+      window.zenexcoder.agent.onApprovalResolved((payload) => {
         useAgentStore.setState((state) => ({
           pendingApprovals: state.pendingApprovals.filter((item) => item.id !== (payload.actionId || payload.id))
         }));

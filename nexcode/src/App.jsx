@@ -70,7 +70,7 @@ class StartupErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('NexCode renderer crashed', error, info);
+    console.error('ZezenexCoderr renderer crashed', error, info);
   }
 
   render() {
@@ -120,7 +120,7 @@ function WelcomeScreen({ onDone }) {
     <div className="welcome">
       <div className="welcome-flow">
         <div>
-          <h1>NexCode</h1>
+          <h1>ZezenexCoderr</h1>
           <p>Local-first AI developer environment with code, vision, terminal, and multi-model support.</p>
         </div>
         <div className="welcome-options">
@@ -229,8 +229,8 @@ function MainApp() {
 
   useEffect(() => {
     const disposers = [
-      window.nexcode.app.onMenu('menu:open-folder', () => useProjectStore.getState().openProject()),
-      window.nexcode.app.onMenu('menu:save-file', () => activeFileId && saveFile(activeFileId))
+      window.zenexcoder.app.onMenu('menu:open-folder', () => useProjectStore.getState().openProject()),
+      window.zenexcoder.app.onMenu('menu:save-file', () => activeFileId && saveFile(activeFileId))
     ];
     return () => disposers.forEach((dispose) => dispose());
   }, [activeFileId, saveFile]);
@@ -264,7 +264,7 @@ function MainApp() {
 
   useEffect(() => {
     const disposers = [
-      window.nexcode.automation.onTrigger((payload) => {
+      window.zenexcoder.automation.onTrigger((payload) => {
         runAutomation(payload.id, payload.context || {});
       })
     ];
@@ -273,8 +273,8 @@ function MainApp() {
 
   useEffect(() => {
     const openSettings = () => setActiveView('settings');
-    window.addEventListener('nexcode:open-settings', openSettings);
-    return () => window.removeEventListener('nexcode:open-settings', openSettings);
+    window.addEventListener('zenexcoder:open-settings', openSettings);
+    return () => window.removeEventListener('zenexcoder:open-settings', openSettings);
   }, []);
 
   if (detachedReview) {
@@ -368,7 +368,7 @@ function MainApp() {
       <TopBar />
       {showFullAccessBanner && (
         <div className="full-access-banner">
-          Full access enabled - NexCode can modify files and run commands without asking.
+          Full access enabled - ZezenexCoderr can modify files and run commands without asking.
           <button className="icon-button" onClick={dismissFullAccessBanner} title="Dismiss full access warning">
             <X size={12} />
           </button>
@@ -398,7 +398,7 @@ export default function App() {
 
   useEffect(() => {
     loadNotifications().catch(() => {});
-    const dispose = window.nexcode?.notify?.onShow?.((payload) => addNotification(payload));
+    const dispose = window.zenexcoder?.notify?.onShow?.((payload) => addNotification(payload));
     return () => dispose?.();
   }, [addNotification, loadNotifications]);
 

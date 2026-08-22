@@ -6,11 +6,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 
-const STORE_FILE = 'nexcode-cluster.json';
+const STORE_FILE = 'zenexcoder-cluster.json';
 let identity = null;
 let previousCpuSnapshot = null;
 
-export const CLUSTER_SERVICE_TYPE = 'nexcode';
+export const CLUSTER_SERVICE_TYPE = 'zenexcoder';
 export const DEFAULT_CLUSTER_PORT = 44556;
 
 function storePath() {
@@ -105,7 +105,7 @@ export function deriveSessionKey({ ecdh, remotePublicKey, pin, clientNonce, serv
 }
 
 export function pairingProof(sessionKey) {
-  return crypto.createHmac('sha256', sessionKey).update('nexcode-pair-proof-v1').digest('base64');
+  return crypto.createHmac('sha256', sessionKey).update('zenexcoder-pair-proof-v1').digest('base64');
 }
 
 export function encryptEnvelope(sessionKey, type, payload = {}) {

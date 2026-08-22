@@ -29,7 +29,7 @@ export function useAI() {
       new Promise((resolve, reject) => {
         let output = '';
         const started = performance.now();
-        const request = window.nexcode.ai.stream(
+        const request = window.zenexcoder.ai.stream(
           {
             provider: taskModel.provider,
             modelId: taskModel.modelId,

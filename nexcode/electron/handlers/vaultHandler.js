@@ -6,14 +6,14 @@ import path from 'node:path';
 import { decryptJson, encryptJson, randomBase64 } from '../../src/utils/encryption.js';
 import { listLearnedRules } from './learningHandler.js';
 
-const KEY_STORE_FILE = 'nexcode-vault-keys.json';
+const KEY_STORE_FILE = 'zenexcoder-vault-keys.json';
 
 function hash(value = '') {
   return crypto.createHash('sha256').update(String(value || 'global')).digest('hex');
 }
 
 function vaultRoot(projectPath = '') {
-  return projectPath ? path.join(projectPath, '.nexcode') : path.join(app.getPath('userData'), 'shared-vault');
+  return projectPath ? path.join(projectPath, '.zenexcoder') : path.join(app.getPath('userData'), 'shared-vault');
 }
 
 function vaultConfigPath(projectPath = '') {
@@ -116,7 +116,7 @@ export async function encryptRuleDelta(rule, { projectPath = '' } = {}) {
   const secret = await ensureVaultSecret({ projectPath });
   return encryptJson(
     {
-      schema: 'nexcode.shared-rule.v1',
+      schema: 'zenexcoder.shared-rule.v1',
       rule,
       exportedAt: Date.now()
     },
@@ -139,7 +139,7 @@ export async function writeSharedVault({ projectPath = '', rules = null } = {}) 
   const activeRules = rules || listLearnedRules({ includeMuted: true, includeDeleted: false });
   const envelope = await encryptJson(
     {
-      schema: 'nexcode.shared-knowledge.v1',
+      schema: 'zenexcoder.shared-knowledge.v1',
       rules: activeRules,
       exportedAt: Date.now()
     },

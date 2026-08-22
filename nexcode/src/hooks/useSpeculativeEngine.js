@@ -107,7 +107,7 @@ async function triggerShadowRun(intent = {}) {
     }
   };
   speculative.markShadow({ triggerHash, intent, startedAt: Date.now() });
-  const result = await window.nexcode.speculative.trigger(payload).catch((error) => ({ ok: false, reason: error.message }));
+  const result = await window.zenexcoder.speculative.trigger(payload).catch((error) => ({ ok: false, reason: error.message }));
   if (!result?.ok) {
     useSpeculativeStore.setState({ activeShadow: null });
   }
@@ -117,12 +117,12 @@ function ensureGlobalListeners() {
   if (globalListenersReady) return;
   globalListenersReady = true;
   useSpeculativeStore.getState().loadSettings().catch(() => {});
-  if (!window.nexcode?.speculative || !window.nexcode?.terminal || !window.nexcode?.git || !window.nexcode?.file) {
+  if (!window.zenexcoder?.speculative || !window.zenexcoder?.terminal || !window.zenexcoder?.git || !window.zenexcoder?.file) {
     return;
   }
   globalDisposers = [
-    window.nexcode.speculative.onCacheReady((payload) => useSpeculativeStore.getState().applyCacheReady(payload)),
-    window.nexcode.terminal.onData((payload) => {
+    window.zenexcoder.speculative.onCacheReady((payload) => useSpeculativeStore.getState().applyCacheReady(payload)),
+    window.zenexcoder.terminal.onData((payload) => {
       const data = payload.data || '';
       terminalBuffer = `${terminalBuffer}${data}`.slice(-6000);
       if (!/(Error:|Exception|Traceback|Unhandled|failed|stack)/i.test(terminalBuffer)) return;
@@ -138,8 +138,8 @@ function ensureGlobalListeners() {
         });
       }, Math.max(2000, useSpeculativeStore.getState().settings.idleDelayMs || 3000));
     }),
-    window.nexcode.git.onStatusChanged(() => useSpeculativeStore.getState().clearCache('Git state changed.')),
-    window.nexcode.file.onSaved(() => useSpeculativeStore.getState().clearCache('File saved.'))
+    window.zenexcoder.git.onStatusChanged(() => useSpeculativeStore.getState().clearCache('Git state changed.')),
+    window.zenexcoder.file.onSaved(() => useSpeculativeStore.getState().clearCache('File saved.'))
   ];
 }
 
@@ -163,7 +163,7 @@ export function useSpeculativeEngine(params = {}) {
     if (!model) return undefined;
 
     function abortForUserEdit() {
-      window.nexcode.speculative.abort({ reason: 'User resumed typing.' }).catch(() => {});
+      window.zenexcoder.speculative.abort({ reason: 'User resumed typing.' }).catch(() => {});
       useSpeculativeStore.setState({ activeShadow: null });
     }
 

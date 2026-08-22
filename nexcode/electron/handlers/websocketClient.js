@@ -19,7 +19,7 @@ import { getLocalClusterNode } from './websocketServer.js';
 import { chooseClusterRoute } from '../../src/utils/loadBalancer.js';
 import { handleP2pSyncMessage } from './p2pSyncHandler.js';
 
-const STORE_FILE = 'nexcode-cluster-routing.json';
+const STORE_FILE = 'zenexcoder-cluster-routing.json';
 const nodes = new Map();
 const clients = new Map();
 const pendingRequests = new Map();
@@ -114,7 +114,7 @@ export function registerDiscoveredNode(service = {}) {
   if (!ip || !service.port) return null;
   return upsertNode({
     nodeId,
-    hostname: txt.hostname || service.name?.replace(/^NexCode-Node-/, '') || service.host || ip,
+    hostname: txt.hostname || service.name?.replace(/^ZezenexCoderr-Node-/, '') || service.host || ip,
     ip,
     port: Number(service.port),
     platform: txt.platform || '',

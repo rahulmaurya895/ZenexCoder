@@ -1,6 +1,6 @@
-# NexCode
+# ZezenexCoderr
 
-NexCode is a local-first AI developer desktop app built with Electron, React, Vite, Monaco, xterm.js, SQLite, and streaming model providers.
+ZezenexCoderr is a local-first AI developer desktop app built with Electron, React, Vite, Monaco, xterm.js, SQLite, and streaming model providers.
 
 ## Providers
 

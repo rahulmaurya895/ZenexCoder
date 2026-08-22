@@ -19,7 +19,7 @@ export default function ShellSelector({ onShellChanged }) {
     setLoading(true);
     setError('');
     try {
-      const result = await window.nexcode.terminal.getShells();
+      const result = await window.zenexcoder.terminal.getShells();
       setShells(result.shells || []);
       setSelected(result.selected || '');
       if (result.selected && !(result.shells || []).some((shell) => shell.path === result.selected)) {
@@ -37,7 +37,7 @@ export default function ShellSelector({ onShellChanged }) {
 
   useEffect(() => {
     refresh().catch(() => {});
-    const dispose = window.nexcode.terminal.onShellChanged((result) => {
+    const dispose = window.zenexcoder.terminal.onShellChanged((result) => {
       setShells(result.shells || []);
       setSelected(result.selected || '');
       setCustomMode(Boolean(result.selected && !(result.shells || []).some((shell) => shell.path === result.selected)));
@@ -56,7 +56,7 @@ export default function ShellSelector({ onShellChanged }) {
     setLoading(true);
     setError('');
     try {
-      const result = await window.nexcode.terminal.setShell(shellPath.trim());
+      const result = await window.zenexcoder.terminal.setShell(shellPath.trim());
       setShells(result.shells || []);
       setSelected(result.selected || shellPath.trim());
       setCustomPath(shellPath.trim());

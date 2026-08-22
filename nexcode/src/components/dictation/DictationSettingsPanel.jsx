@@ -15,14 +15,14 @@ export default function DictationSettingsPanel() {
   const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   useEffect(() => {
-    window.nexcode.store
+    window.zenexcoder.store
       .get('dictation:settings', { language: 'en-US' })
       .then((settings) => setLanguage(settings.language || 'en-US'))
       .catch(() => {});
   }, []);
 
   async function save() {
-    await window.nexcode.store.set('dictation:settings', { language });
+    await window.zenexcoder.store.set('dictation:settings', { language });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1600);
   }

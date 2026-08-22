@@ -419,6 +419,7 @@ const api = {
   }
 };
 
+contextBridge.exposeInMainWorld('zenexcoder', api);
 contextBridge.exposeInMainWorld('nexcode', api);
 
 

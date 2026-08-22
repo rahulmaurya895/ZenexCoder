@@ -9,7 +9,7 @@ export const useChatStore = create((set, get) => ({
   highlightMessageId: null,
   tokenEstimate: 0,
   async loadSessions() {
-    const sessions = await window.nexcode.db.listSessions();
+    const sessions = await window.zenexcoder.db.listSessions();
     if (!sessions.length) {
       set({ sessions: [], activeSessionId: null, messages: [], tokenEstimate: 0, highlightMessageId: null });
       return;
@@ -22,7 +22,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
   async createSession(model = {}) {
-    const session = await window.nexcode.db.createSession({
+    const session = await window.zenexcoder.db.createSession({
       title: 'New Chat',
       modelProvider: model.provider,
       modelId: model.modelId
@@ -36,7 +36,7 @@ export const useChatStore = create((set, get) => ({
     return session;
   },
   async loadMessages(sessionId) {
-    const messages = await window.nexcode.db.listMessages(sessionId);
+    const messages = await window.zenexcoder.db.listMessages(sessionId);
     set({ activeSessionId: sessionId, messages, tokenEstimate: estimateMessageTokens(messages) });
     return messages;
   },
@@ -45,7 +45,7 @@ export const useChatStore = create((set, get) => ({
     if (!sessionId || !nextTitle) {
       return null;
     }
-    const updated = await window.nexcode.db.updateSession({ id: sessionId, title: nextTitle });
+    const updated = await window.zenexcoder.db.updateSession({ id: sessionId, title: nextTitle });
     await get().loadSessions();
     return updated;
   },
@@ -54,7 +54,7 @@ export const useChatStore = create((set, get) => ({
       return { ok: false };
     }
     const wasActive = get().activeSessionId === sessionId;
-    await window.nexcode.db.deleteSession(sessionId);
+    await window.zenexcoder.db.deleteSession(sessionId);
     set((state) => ({ sessions: state.sessions.filter((session) => session.id !== sessionId) }));
     if (wasActive) {
       set({ activeSessionId: null, messages: [], tokenEstimate: 0, highlightMessageId: null });
@@ -68,7 +68,7 @@ export const useChatStore = create((set, get) => ({
       const session = await get().createSession();
       sessionId = session.id;
     }
-    const message = await window.nexcode.db.addMessage({
+    const message = await window.zenexcoder.db.addMessage({
       sessionId,
       role,
       content,
@@ -120,7 +120,7 @@ export const useChatStore = create((set, get) => ({
   },
   exportSession() {
     const session = get().sessions.find((item) => item.id === get().activeSessionId);
-    const title = session?.title || 'NexCode Chat';
+    const title = session?.title || 'ZezenexCoderr Chat';
     return [`# ${title}`, '', ...get().messages.map((message) => `## ${message.role}\n\n${message.content}`)].join('\n\n');
   }
 }));

@@ -12,7 +12,7 @@ export const useConnectionsStore = create((set, get) => ({
   loading: false,
   async load() {
     set({ loading: true });
-    const settings = await window.nexcode.store.get('settings', {}).catch(() => ({}));
+    const settings = await window.zenexcoder.store.get('settings', {}).catch(() => ({}));
     set({
       enabledIntegrations: {
         ...defaultEnabled,
@@ -22,8 +22,8 @@ export const useConnectionsStore = create((set, get) => ({
     });
   },
   async persist(enabledIntegrations = get().enabledIntegrations) {
-    const settings = await window.nexcode.store.get('settings', {}).catch(() => ({}));
-    await window.nexcode.store.set('settings', {
+    const settings = await window.zenexcoder.store.get('settings', {}).catch(() => ({}));
+    await window.zenexcoder.store.set('settings', {
       ...settings,
       connections: {
         ...(settings.connections || {}),

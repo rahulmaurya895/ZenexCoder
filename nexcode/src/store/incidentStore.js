@@ -50,9 +50,9 @@ export const useIncidentStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const [incidents, settings, github] = await Promise.all([
-        window.nexcode.incident.list(),
-        window.nexcode.incident.getSettings(),
-        window.nexcode.github.tokenStatus()
+        window.zenexcoder.incident.list(),
+        window.zenexcoder.incident.getSettings(),
+        window.zenexcoder.github.tokenStatus()
       ]);
       set({
         incidents: Array.isArray(incidents) ? incidents : [],
@@ -68,7 +68,7 @@ export const useIncidentStore = create((set, get) => ({
   async saveSettings(patch) {
     set({ saving: true, error: null });
     try {
-      const settings = await window.nexcode.incident.saveSettings(patch);
+      const settings = await window.zenexcoder.incident.saveSettings(patch);
       set({ settings: { ...defaultSettings, ...(settings || {}) }, saving: false });
       return settings;
     } catch (error) {
@@ -78,7 +78,7 @@ export const useIncidentStore = create((set, get) => ({
   },
 
   async saveGitHubToken(token) {
-    const result = await window.nexcode.github.saveToken(token);
+    const result = await window.zenexcoder.github.saveToken(token);
     set({ github: result || { hasToken: false } });
     return result;
   },
@@ -86,7 +86,7 @@ export const useIncidentStore = create((set, get) => ({
   async fetchManual(payload = {}) {
     set({ fetching: true, error: null });
     try {
-      const result = await window.nexcode.incident.fetchManual(payload);
+      const result = await window.zenexcoder.incident.fetchManual(payload);
       set((state) => ({
         fetching: false,
         incidents: (result.incidents || []).reduce((list, incident) => mergeIncident(list, incident), state.incidents)
@@ -99,7 +99,7 @@ export const useIncidentStore = create((set, get) => ({
   },
 
   async startHealing(incidentId) {
-    await window.nexcode.incident.startHealing(incidentId);
+    await window.zenexcoder.incident.startHealing(incidentId);
     set((state) => ({
       incidents: state.incidents.map((incident) =>
         incident.id === incidentId ? { ...incident, status: 'healing' } : incident
@@ -108,7 +108,7 @@ export const useIncidentStore = create((set, get) => ({
   },
 
   async takeOver(incidentId) {
-    const result = await window.nexcode.autoFix.takeOver(incidentId);
+    const result = await window.zenexcoder.autoFix.takeOver(incidentId);
     if (result?.incident) {
       get().applyIncident(result.incident);
     }

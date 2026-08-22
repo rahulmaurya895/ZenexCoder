@@ -615,7 +615,7 @@ export async function gitStash(projectPath, payload = {}) {
   if (!repo.isRepo) return { isRepo: false };
   const action = payload.action === 'pop' ? 'pop' : 'push';
   const args = ['stash', action];
-  if (action === 'push') args.push('-u', '-m', payload.message || 'NexCode auto-stash before pull');
+  if (action === 'push') args.push('-u', '-m', payload.message || 'ZezenexCoderr auto-stash before pull');
   const result = await runGit(repo.projectPath, args, { allowFailure: true });
   if (result.code !== 0 && !/No local changes to save/i.test(`${result.stdout}\n${result.stderr}`)) {
     throw new Error(result.stderr || result.stdout || `Stash ${action} failed.`);

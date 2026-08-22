@@ -113,7 +113,7 @@ async function ensurePage() {
   if (page && !page.isClosed()) return page;
 
   // Keep the managed browser profile with the application, not inside the
-  // project currently open in NexCode. The old cwd-based profile polluted
+  // project currently open in ZezenexCoderr. The old cwd-based profile polluted
   // project folders and could share browser state between unrelated projects.
   // Managed persistent browser profile path stored in user data directory
   const sessionDir = path.join(app.getPath('userData'), 'managed-browser-profile');
@@ -223,8 +223,8 @@ async function resolveLocator(input) {
   const raw = String(input || '').trim();
   if (!raw) throw new Error('Selector or element id is required.');
   const pageRef = await ensurePage();
-  const byNexCodeId = pageRef.locator(`[data-nexcode-browser-id="${cssEscape(raw)}"]`);
-  if (await byNexCodeId.count().catch(() => 0)) return byNexCodeId.first();
+  const byZezenexCoderrId = pageRef.locator(`[data-zenexcoder-browser-id="${cssEscape(raw)}"]`);
+  if (await byZezenexCoderrId.count().catch(() => 0)) return byZezenexCoderrId.first();
 
   const byDomId = pageRef.locator(`#${cssEscape(raw)}`);
   if (await byDomId.count().catch(() => 0)) return byDomId.first();
@@ -355,11 +355,11 @@ export async function browserGetDOM() {
     }
 
     function ensureId(element) {
-      if (!element.dataset.nexcodeBrowserId) {
+      if (!element.dataset.zenexcoderBrowserId) {
         counter += 1;
-        element.dataset.nexcodeBrowserId = `b${counter}`;
+        element.dataset.zenexcoderBrowserId = `b${counter}`;
       }
-      return element.dataset.nexcodeBrowserId;
+      return element.dataset.zenexcoderBrowserId;
     }
 
     const headings = [...document.querySelectorAll('h1,h2,h3')]

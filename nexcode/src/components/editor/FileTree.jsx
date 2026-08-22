@@ -16,7 +16,7 @@ function TreeNode({ node, depth = 0 }) {
   const isFolder = node.type === 'folder';
 
   async function readNodeFile() {
-    const result = await window.nexcode.file.read(node.path);
+    const result = await window.zenexcoder.file.read(node.path);
     return result.content;
   }
 
@@ -68,7 +68,7 @@ function TreeNode({ node, depth = 0 }) {
             onClick={async () => {
               const target = window.prompt('New path', node.path);
               if (target) {
-                await window.nexcode.file.rename(node.path, target);
+                await window.zenexcoder.file.rename(node.path, target);
                 await refreshTree();
               }
             }}
@@ -78,7 +78,7 @@ function TreeNode({ node, depth = 0 }) {
           <button
             onClick={async () => {
               if (window.confirm(`Delete ${node.name}?`)) {
-                await window.nexcode.file.delete(node.path);
+                await window.zenexcoder.file.delete(node.path);
                 await refreshTree();
               }
             }}

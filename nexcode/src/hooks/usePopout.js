@@ -41,10 +41,10 @@ function pickState(state, fields) {
 }
 
 function broadcast(storeName, state) {
-  if (applyingRemote || !window.nexcode?.storeSync) return;
+  if (applyingRemote || !window.zenexcoder?.storeSync) return;
   const fields = syncFields[storeName];
   if (!fields) return;
-  window.nexcode.storeSync.broadcast({
+  window.zenexcoder.storeSync.broadcast({
     sourceId,
     store: storeName,
     state: pickState(state, fields),
@@ -71,13 +71,13 @@ export function usePopout() {
   useEffect(() => {
     useWindowStore.getState().loadPopoutState().catch(() => {});
 
-    if (!window.nexcode?.window || !window.nexcode?.storeSync) {
+    if (!window.zenexcoder?.window || !window.zenexcoder?.storeSync) {
       return undefined;
     }
 
     const disposers = [
-      window.nexcode.window.onPopoutState((state) => useWindowStore.getState().applyPopoutState(state)),
-      window.nexcode.storeSync.onSync(applyRemote),
+      window.zenexcoder.window.onPopoutState((state) => useWindowStore.getState().applyPopoutState(state)),
+      window.zenexcoder.storeSync.onSync(applyRemote),
       useChatStore.subscribe((state) => broadcast('chat', state)),
       useAgentStore.subscribe((state) => broadcast('agent', state)),
       useAppStore.subscribe((state) => broadcast('app', state))

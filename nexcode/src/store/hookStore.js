@@ -14,8 +14,8 @@ export const useHookStore = create((set, get) => ({
     set({ loading: true, error: '' });
     try {
       const [hooks, server] = await Promise.all([
-        window.nexcode.hooks.list(),
-        window.nexcode.hooks.serverState()
+        window.zenexcoder.hooks.list(),
+        window.zenexcoder.hooks.serverState()
       ]);
       set({ hooks, server, loading: false });
       return hooks;
@@ -25,16 +25,16 @@ export const useHookStore = create((set, get) => ({
     }
   },
   async saveHook(hook) {
-    const saved = await window.nexcode.hooks.save(hook);
+    const saved = await window.zenexcoder.hooks.save(hook);
     set((state) => ({ hooks: [saved, ...state.hooks.filter((item) => item.id !== saved.id)] }));
     return saved;
   },
   async deleteHook(id) {
-    await window.nexcode.hooks.delete(id);
+    await window.zenexcoder.hooks.delete(id);
     set((state) => ({ hooks: state.hooks.filter((item) => item.id !== id) }));
   },
   async setHookEnabled(id, enabled) {
-    const saved = await window.nexcode.hooks.setEnabled(id, enabled);
+    const saved = await window.zenexcoder.hooks.setEnabled(id, enabled);
     set((state) => ({
       hooks: state.hooks.map((item) => (item.id === id ? { ...item, ...saved } : item))
     }));
@@ -45,22 +45,22 @@ export const useHookStore = create((set, get) => ({
       set({ installed: {} });
       return {};
     }
-    const installed = await window.nexcode.hooks.listInstalled(projectPath);
+    const installed = await window.zenexcoder.hooks.listInstalled(projectPath);
     set({ installed });
     return installed;
   },
   async installGitHook(projectPath, hookType) {
-    const result = await window.nexcode.hooks.installGitHook(projectPath, hookType);
+    const result = await window.zenexcoder.hooks.installGitHook(projectPath, hookType);
     await get().refreshInstalled(projectPath);
     return result;
   },
   async removeGitHook(projectPath, hookType) {
-    const result = await window.nexcode.hooks.removeGitHook(projectPath, hookType);
+    const result = await window.zenexcoder.hooks.removeGitHook(projectPath, hookType);
     await get().refreshInstalled(projectPath);
     return result;
   },
   async registerProject(projectPath) {
-    const result = await window.nexcode.hooks.registerProject(projectPath);
+    const result = await window.zenexcoder.hooks.registerProject(projectPath);
     await get().refreshInstalled(projectPath);
     return result;
   },

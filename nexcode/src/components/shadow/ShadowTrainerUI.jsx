@@ -9,8 +9,8 @@ export default function ShadowTrainerUI() {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    if (window.nexcode?.shadowAI) {
-      window.nexcode.shadowAI.getProfile().then((p) => {
+    if (window.zenexcoder?.shadowAI) {
+      window.zenexcoder.shadowAI.getProfile().then((p) => {
         if (p) {
           setProfile(p);
           if (Array.isArray(p.indexedRepos)) {
@@ -19,7 +19,7 @@ export default function ShadowTrainerUI() {
         }
       });
 
-      const unbind = window.nexcode.shadowAI.onStatusChanged((data) => {
+      const unbind = window.zenexcoder.shadowAI.onStatusChanged((data) => {
         setStatus(data);
       });
       return () => unbind?.();
@@ -37,7 +37,7 @@ export default function ShadowTrainerUI() {
     setStatus({ status: 'training_started', message: 'Analyzing GitHub commit AST heuristics...' });
 
     try {
-      const res = await window.nexcode.shadowAI.train(reposList, token);
+      const res = await window.zenexcoder.shadowAI.train(reposList, token);
       if (res?.profile) {
         setProfile(res.profile);
       }

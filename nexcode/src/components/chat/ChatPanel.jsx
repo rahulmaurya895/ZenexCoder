@@ -55,7 +55,7 @@ export default function ChatPanel() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `nexcode-chat-${Date.now()}.md`;
+    anchor.download = `zenexcoder-chat-${Date.now()}.md`;
     anchor.click();
     URL.revokeObjectURL(url);
   }

@@ -1,6 +1,6 @@
 ================================================================================
-   NEXCODE — PHASE 2B (PART 7 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of NEXCODE_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt
+   ZENEXCODER — PHASE 2B (PART 7 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZENEXCODER_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt
    THEME: "COMPUTER USE" — Screen Capture, Mouse & Keyboard Control
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -30,7 +30,7 @@ wired to real state/IPC.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 7 ONLY)
 ================================================================================
 
-Add these files to the existing nexcode/ structure:
+Add these files to the existing zenexcoder/ structure:
 
 src/
 ├── components/
@@ -204,5 +204,5 @@ START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 7 OF 10
-NEXT FILE: NEXCODE_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt (Hooks System)
+NEXT FILE: ZENEXCODER_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt (Hooks System)
 ================================================================================

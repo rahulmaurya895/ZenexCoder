@@ -2,7 +2,7 @@ import { app, safeStorage, BrowserWindow, ipcMain } from 'electron';
 import fsSync from 'node:fs';
 import path from 'node:path';
 
-const CONFIG_FILE = 'nexcode-serpapi-config.json';
+const CONFIG_FILE = 'zenexcoder-serpapi-config.json';
 
 function storePath() {
   const dir = app.getPath('userData');
@@ -128,7 +128,7 @@ export async function executeFastSearch(query = '') {
 
   sendToAll('fast-search:status', { status: 'searching', query, startTime });
 
-  const response = await fetch(url, { headers: { 'User-Agent': 'NexCode-FastSearch/2.0' } });
+  const response = await fetch(url, { headers: { 'User-Agent': 'ZezenexCoderr-FastSearch/2.0' } });
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');

@@ -9,9 +9,9 @@ export default function ScenarioBuilder() {
 
   useEffect(() => {
     const disposers = [
-      window.nexcode.qa.onStreamLogs((payload) => state.applyLog(payload)),
-      window.nexcode.qa.onScreenshotCapture((payload) => state.applyScreenshot(payload)),
-      window.nexcode.qa.onResultFinal((payload) => state.applyResult(payload))
+      window.zenexcoder.qa.onStreamLogs((payload) => state.applyLog(payload)),
+      window.zenexcoder.qa.onScreenshotCapture((payload) => state.applyScreenshot(payload)),
+      window.zenexcoder.qa.onResultFinal((payload) => state.applyResult(payload))
     ];
     return () => disposers.forEach((dispose) => dispose());
   }, []);

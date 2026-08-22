@@ -23,7 +23,7 @@ export async function startNetworkDiscovery() {
 
   if (!publishedService) {
     publishedService = instance.publish({
-      name: `NexCode-Node-${identity.hostname}-${identity.nodeId.slice(0, 8)}`,
+      name: `ZezenexCoderr-Node-${identity.hostname}-${identity.nodeId.slice(0, 8)}`,
       type: CLUSTER_SERVICE_TYPE,
       port,
       txt: {

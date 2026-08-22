@@ -7,8 +7,8 @@ let disposers = [];
 function ensureListeners() {
   if (!disposers.length) {
     disposers = [
-      window.nexcode.incident.onNewAlert((payload) => useIncidentStore.getState().applyNewAlert(payload)),
-      window.nexcode.incident.onHealingStatus((payload) => useIncidentStore.getState().applyHealingStatus(payload))
+      window.zenexcoder.incident.onNewAlert((payload) => useIncidentStore.getState().applyNewAlert(payload)),
+      window.zenexcoder.incident.onHealingStatus((payload) => useIncidentStore.getState().applyHealingStatus(payload))
     ];
   }
   listenerUsers += 1;

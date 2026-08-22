@@ -36,7 +36,7 @@ export const useClusterStore = create((set, get) => ({
   async load() {
     set({ loading: true, error: null });
     try {
-      const state = await window.nexcode.cluster.list();
+      const state = await window.zenexcoder.cluster.list();
       set({
         localNode: state.localNode || null,
         nodes: state.nodes || [],
@@ -51,7 +51,7 @@ export const useClusterStore = create((set, get) => ({
   async scanStart() {
     set({ scanning: true, error: null });
     try {
-      const result = await window.nexcode.cluster.scanStart();
+      const result = await window.zenexcoder.cluster.scanStart();
       if (result.state) get().applyState(result.state);
       set({ scanning: Boolean(result.ok), error: result.ok ? null : result.message || 'Discovery failed.' });
       return result;
@@ -63,13 +63,13 @@ export const useClusterStore = create((set, get) => ({
 
   async requestPair(node) {
     set({ pairingNode: node, error: null });
-    await window.nexcode.cluster.requestPair({ nodeId: node.nodeId, ip: node.ip, port: node.port });
+    await window.zenexcoder.cluster.requestPair({ nodeId: node.nodeId, ip: node.ip, port: node.port });
   },
 
   async verifyPin(pin) {
     const node = get().pairingNode;
     if (!node) return null;
-    const result = await window.nexcode.cluster.verifyPin({ nodeId: node.nodeId, ip: node.ip, pin });
+    const result = await window.zenexcoder.cluster.verifyPin({ nodeId: node.nodeId, ip: node.ip, pin });
     set({ pairingNode: null });
     return result;
   },
@@ -79,7 +79,7 @@ export const useClusterStore = create((set, get) => ({
   },
 
   async disconnect(nodeId) {
-    await window.nexcode.cluster.disconnect(nodeId);
+    await window.zenexcoder.cluster.disconnect(nodeId);
     set((state) => ({
       nodes: state.nodes.map((node) =>
         node.nodeId === nodeId ? { ...node, connected: false, status: 'disconnected' } : node
@@ -88,7 +88,7 @@ export const useClusterStore = create((set, get) => ({
   },
 
   async setRouting(patch) {
-    const state = await window.nexcode.cluster.setRouting(patch);
+    const state = await window.zenexcoder.cluster.setRouting(patch);
     get().applyState(state);
     return state;
   },

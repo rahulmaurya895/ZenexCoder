@@ -28,7 +28,7 @@ export const useGitStore = create((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const status = await window.nexcode.git.status(projectPath);
+      const status = await window.zenexcoder.git.status(projectPath);
       set({ ...emptyStatus, ...status, loading: false });
       return status;
     } catch (error) {
@@ -39,7 +39,7 @@ export const useGitStore = create((set, get) => ({
   async refreshBranches(projectPath = get().getProjectPath()) {
     if (!projectPath) return { current: '', local: [], remote: [] };
     try {
-      const branches = await window.nexcode.git.branches(projectPath);
+      const branches = await window.zenexcoder.git.branches(projectPath);
       set({ branches });
       return branches;
     } catch (error) {
@@ -50,7 +50,7 @@ export const useGitStore = create((set, get) => ({
   async refreshLog(projectPath = get().getProjectPath(), limit = 20) {
     if (!projectPath) return [];
     try {
-      const result = await window.nexcode.git.log(projectPath, limit);
+      const result = await window.zenexcoder.git.log(projectPath, limit);
       set({ commits: result.commits || [] });
       return result.commits || [];
     } catch (error) {
@@ -61,94 +61,94 @@ export const useGitStore = create((set, get) => ({
   async stage(filePath) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return;
-    await window.nexcode.git.stage(projectPath, filePath);
+    await window.zenexcoder.git.stage(projectPath, filePath);
     await get().refreshStatus(projectPath);
   },
   async unstage(filePath) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return;
-    await window.nexcode.git.unstage(projectPath, filePath);
+    await window.zenexcoder.git.unstage(projectPath, filePath);
     await get().refreshStatus(projectPath);
   },
   async commit(message) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.commit(projectPath, message);
+    const result = await window.zenexcoder.git.commit(projectPath, message);
     await Promise.all([get().refreshStatus(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async checkout(branchName) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return;
-    await window.nexcode.git.checkout(projectPath, branchName);
+    await window.zenexcoder.git.checkout(projectPath, branchName);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
   },
   async createBranch(name, fromRef = '') {
     const projectPath = get().getProjectPath();
     if (!projectPath) return;
-    await window.nexcode.git.createBranch(projectPath, name, fromRef);
+    await window.zenexcoder.git.createBranch(projectPath, name, fromRef);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath)]);
   },
   async renameBranch(oldName, newName) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.branchRename(projectPath, oldName, newName);
+    const result = await window.zenexcoder.git.branchRename(projectPath, oldName, newName);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async deleteBranch(branchName, options = {}) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.branchDelete(projectPath, { branchName, ...options });
+    const result = await window.zenexcoder.git.branchDelete(projectPath, { branchName, ...options });
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async setUpstream(branchName, remoteRef) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.setUpstream(projectPath, branchName, remoteRef);
+    const result = await window.zenexcoder.git.setUpstream(projectPath, branchName, remoteRef);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath)]);
     return result;
   },
   async merge(sourceBranch) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.merge(projectPath, sourceBranch);
+    const result = await window.zenexcoder.git.merge(projectPath, sourceBranch);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async fetch(remote = 'origin') {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.fetch(projectPath, { remote });
+    const result = await window.zenexcoder.git.fetch(projectPath, { remote });
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async pull(payload = {}) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.pull(projectPath, payload);
+    const result = await window.zenexcoder.git.pull(projectPath, payload);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async push(payload = {}) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.push(projectPath, payload);
+    const result = await window.zenexcoder.git.push(projectPath, payload);
     await Promise.all([get().refreshStatus(projectPath), get().refreshBranches(projectPath), get().refreshLog(projectPath)]);
     return result;
   },
   async stash(payload = {}) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.stash(projectPath, payload);
+    const result = await window.zenexcoder.git.stash(projectPath, payload);
     await get().refreshStatus(projectPath);
     return result;
   },
   async loadDiff(filePath, staged = false) {
     const projectPath = get().getProjectPath();
     if (!projectPath) return null;
-    const result = await window.nexcode.git.diff(projectPath, filePath, staged);
+    const result = await window.zenexcoder.git.diff(projectPath, filePath, staged);
     const diff = { filePath, staged, raw: result.diff || '' };
     set({ selectedDiff: diff });
     return diff;

@@ -2,7 +2,7 @@ import { app, safeStorage, BrowserWindow, ipcMain } from 'electron';
 import fsSync from 'node:fs';
 import path from 'node:path';
 
-const PROFILE_FILE = 'nexcode-shadow-style-profile.json';
+const PROFILE_FILE = 'zenexcoder-shadow-style-profile.json';
 
 function storePath() {
   const dir = app.getPath('userData');
@@ -111,7 +111,7 @@ export async function trainShadowAI(selectedRepos = [], githubToken = '') {
     filesAnalyzed: 0
   };
 
-  const headers = { 'User-Agent': 'NexCode-ShadowAI/2.0' };
+  const headers = { 'User-Agent': 'ZezenexCoderr-ShadowAI/2.0' };
   if (githubToken) {
     headers['Authorization'] = `token ${githubToken}`;
   }

@@ -1,11 +1,11 @@
 ================================================================================
-   NEXCODE — COMPLETE BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZENEXCODER — COMPLETE BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    AI-Powered Developer Environment | Local-First + Cloud AI
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE
 ================================================================================
 
 YOU ARE AN EXPERT ELECTRON + REACT + NODE.JS DEVELOPER.
-Your job: Build the complete "NexCode" desktop application exactly as described below.
+Your job: Build the complete "ZezenexCoderr" desktop application exactly as described below.
 Do NOT skip any feature. Do NOT add placeholder/fake UI. Every feature must be FUNCTIONAL.
 After reading, create ALL files in the correct folder structure.
 
@@ -13,7 +13,7 @@ After reading, create ALL files in the correct folder structure.
 SECTION 1: PROJECT OVERVIEW
 ================================================================================
 
-App Name: NexCode
+App Name: ZezenexCoderr
 Type: Desktop Application (Windows + macOS + Linux)
 Framework: Electron + React (Vite) + Node.js
 Purpose: A fully local AI-powered developer environment — like VS Code + ChatGPT + Codex combined.
@@ -26,7 +26,7 @@ SECTION 2: COMPLETE FOLDER STRUCTURE
 
 Create this EXACT structure. Every file listed must be created:
 
-nexcode/
+zenexcoder/
 ├── package.json
 ├── vite.config.js
 ├── electron.vite.config.js
@@ -126,7 +126,7 @@ SECTION 3: DEPENDENCIES — package.json
 Create package.json with these EXACT dependencies:
 
 {
-  "name": "nexcode",
+  "name": "zenexcoder",
   "version": "1.0.0",
   "description": "AI-Powered Developer Environment",
   "main": "electron/main.js",
@@ -652,12 +652,12 @@ electron/main.js must:
 3. Auto-start Ollama on app launch if installed
 4. Handle app quit: gracefully stop Ollama process
 5. Custom menu bar with keyboard shortcuts
-6. Deep link support (nexcode:// protocol)
+6. Deep link support (zenexcoder:// protocol)
 7. Auto-updater setup
 
 electron/preload.js:
-Expose ALL IPC calls as window.nexcode.* methods using contextBridge.
-Example: window.nexcode.ai.stream(params, onToken, onDone, onError)
+Expose ALL IPC calls as window.zenexcoder.* methods using contextBridge.
+Example: window.zenexcoder.ai.stream(params, onToken, onDone, onError)
 
 ================================================================================
 SECTION 13: STATE MANAGEMENT (Zustand)
@@ -714,19 +714,19 @@ SECTION 14: PROMPT TEMPLATES (promptTemplates.js)
 Export these EXACT prompt templates (AI will use them):
 
 SYSTEM_PROMPTS = {
-  coding: `You are NexCode AI, an expert software developer assistant.
+  coding: `You are ZezenexCoderr AI, an expert software developer assistant.
 You write clean, production-ready, well-commented code.
 Always specify the programming language in code blocks.
 When generating files, show the complete file path as a comment at the top.
 Format: \`\`\`language\\n// filepath: path/to/file.ext\\n[code]\`\`\``,
 
-  vision: `You are NexCode Vision AI, an expert at analyzing visual content and converting it to code.
+  vision: `You are ZezenexCoderr Vision AI, an expert at analyzing visual content and converting it to code.
 When analyzing UI screenshots: generate complete, working HTML/CSS/JS.
 When analyzing diagrams: implement the logic shown.
 When analyzing errors: provide specific fixes with code.
 Be precise and thorough.`,
 
-  general: `You are NexCode AI, a helpful developer assistant.
+  general: `You are ZezenexCoderr AI, a helpful developer assistant.
 Answer clearly and concisely. Use code examples when helpful.
 Format code in proper markdown code blocks with language specified.`
 }
@@ -847,8 +847,8 @@ SECTION 17: BUILD & DISTRIBUTION
 electron-builder config in package.json:
 
 "build": {
-  "appId": "com.nexcode.app",
-  "productName": "NexCode",
+  "appId": "com.zenexcoder.app",
+  "productName": "ZezenexCoderr",
   "directories": { "output": "dist" },
   "files": ["dist/**/*", "electron/**/*"],
   "win": {
@@ -875,7 +875,7 @@ SECTION 18: FIRST-LAUNCH EXPERIENCE
 
 When isFirstLaunch === true, show Welcome Screen:
 
-Step 1: "Welcome to NexCode" 
+Step 1: "Welcome to ZezenexCoderr" 
   - Brief feature overview (4 cards: Code AI, Vision, Local Models, Terminal)
   - "Let's set up your workspace"
 

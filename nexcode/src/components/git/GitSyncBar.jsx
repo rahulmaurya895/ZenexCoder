@@ -25,16 +25,16 @@ export default function GitSyncBar() {
   const upstream = splitUpstream(currentDetail?.upstream, branch);
 
   useEffect(() => {
-    window.nexcode?.github?.tokenStatus?.().then((res) => setHasToken(Boolean(res?.hasToken))).catch(() => {});
+    window.zenexcoder?.github?.tokenStatus?.().then((res) => setHasToken(Boolean(res?.hasToken))).catch(() => {});
   }, []);
 
   async function saveToken() {
     if (!githubToken.trim()) return;
-    await window.nexcode.github.saveToken(githubToken.trim());
+    await window.zenexcoder.github.saveToken(githubToken.trim());
     setHasToken(true);
     setShowTokenInput(false);
     setGithubToken('');
-    window.nexcode.notify.show({ title: 'GitHub Token', body: 'Token saved securely.' });
+    window.zenexcoder.notify.show({ title: 'GitHub Token', body: 'Token saved securely.' });
   }
 
   async function run(action, fn, notifyBody) {
@@ -52,12 +52,12 @@ export default function GitSyncBar() {
         return result;
       }
       setState({ action, status: 'success', message: result?.summary || notifyBody });
-      await window.nexcode.notify.show({ title: 'Git', body: notifyBody });
+      await window.zenexcoder.notify.show({ title: 'Git', body: notifyBody });
       setTimeout(() => setState((current) => (current.action === action ? { action: '', status: 'idle', message: '' } : current)), 300);
       return result;
     } catch (error) {
       setState({ action, status: 'error', message: error.message });
-      await window.nexcode.notify.show({ title: 'Git error', body: error.message });
+      await window.zenexcoder.notify.show({ title: 'Git error', body: error.message });
       return null;
     }
   }

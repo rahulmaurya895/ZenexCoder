@@ -1,6 +1,6 @@
 ================================================================================
-   NEXCODE — PHASE 2B (PART 2 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of NEXCODE_PHASE2B_PART1_BUILD_INSTRUCTIONS.txt
+   ZENEXCODER — PHASE 2B (PART 2 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZENEXCODER_PHASE2B_PART1_BUILD_INSTRUCTIONS.txt
    THEME: "GIT WORKTREES + BRANCH MANAGEMENT"
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -72,7 +72,7 @@ SECTION 2: GIT WORKTREES
 
 Goal: let the user create additional working directories linked to the
 same repo (different branches checked out simultaneously), and switch
-NexCode's active project to one of them — useful for running an agent
+ZezenexCoderr's active project to one of them — useful for running an agent
 task on a feature branch while keeping main checked out elsewhere.
 
 2.1 gitHandler.js additions
@@ -97,7 +97,7 @@ task on a feature branch while keeping main checked out elsewhere.
       refresh(),
       add({ newPath, branchName, createBranch, fromRef }),
       remove(worktreePath, { force }),
-      openInNexCode(worktreePath)   // see 2.4
+      openInZezenexCoderr(worktreePath)   // see 2.4
     }
 
 2.3 WorktreePanel.jsx (new sub-tab inside GitPanel, or accessible via the
@@ -113,13 +113,13 @@ task on a feature branch while keeping main checked out elsewhere.
     - Each WorktreeCard shows: folder path (truncated, full path on
       hover), branch name, locked icon if isLocked, "Open" and "Remove"
       buttons
-        - "Open" -> worktreeStore.openInNexCode(path) (see 2.4)
+        - "Open" -> worktreeStore.openInZezenexCoderr(path) (see 2.4)
         - "Remove" -> confirm dialog (since git_destructive) -> shows
           Phase 2A ApprovalRequest card if status === 'pending_review' is
           required by current permission mode; on approval ->
           gitWorktreeRemove
 
-2.4 "Open in NexCode" behavior
+2.4 "Open in ZezenexCoderr" behavior
     - Reuses Phase 1's project-switching mechanism: adds the worktree path
       as a project entry in projectStore (Phase 1) if not already present,
       then switches the active project to it (same as opening any other
@@ -274,7 +274,7 @@ SECTION 8: IMPLEMENTATION ORDER (PART 2)
 2. worktreeStore.js + useWorktrees.js
 3. WorktreePanel.jsx + WorktreeCard.jsx; flip 'worktrees' card in
    connectionRegistry.js (Part 1) to 'available' with this as settingsRoute
-4. "Open in NexCode" wiring via existing projectStore (Phase 1)
+4. "Open in ZezenexCoderr" wiring via existing projectStore (Phase 1)
 5. BranchManager.jsx (rename, delete, set-upstream) -> link from
    GitBranchSwitcher "Manage branches"
 6. MergeDialog.jsx + gitMerge wiring, including conflict-abort path
@@ -319,6 +319,6 @@ START BUILDING NOW. FOLLOW SECTION 8 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 2 OF 10
-NEXT FILE: NEXCODE_PHASE2B_PART3_BUILD_INSTRUCTIONS.txt (Environments —
+NEXT FILE: ZENEXCODER_PHASE2B_PART3_BUILD_INSTRUCTIONS.txt (Environments —
 per-project env configs, runtime/interpreter selection, env var manager)
 ================================================================================

@@ -11,9 +11,9 @@ export const useLearningStore = create((set, get) => ({
     set({ loading: true, error: '' });
     try {
       const [rules, stats, analysisState] = await Promise.all([
-        window.nexcode.learning.getRules(),
-        window.nexcode.learning.getStats(),
-        window.nexcode.learning.getAnalysisState()
+        window.zenexcoder.learning.getRules(),
+        window.zenexcoder.learning.getStats(),
+        window.zenexcoder.learning.getAnalysisState()
       ]);
       set({ rules, stats, analysisState, loading: false });
     } catch (error) {
@@ -22,7 +22,7 @@ export const useLearningStore = create((set, get) => ({
   },
 
   async saveRule(rule) {
-    const saved = await window.nexcode.learning.updateRule(rule);
+    const saved = await window.zenexcoder.learning.updateRule(rule);
     set((state) => ({
       rules: [saved, ...state.rules.filter((item) => item.id !== saved.id)]
     }));
@@ -31,20 +31,20 @@ export const useLearningStore = create((set, get) => ({
   },
 
   async deleteRule(id) {
-    await window.nexcode.learning.deleteRule(id);
+    await window.zenexcoder.learning.deleteRule(id);
     set((state) => ({ rules: state.rules.filter((rule) => rule.id !== id) }));
     await get().refreshStats();
   },
 
   async triggerAnalysis() {
-    const result = await window.nexcode.learning.triggerAnalysis();
+    const result = await window.zenexcoder.learning.triggerAnalysis();
     set({ analysisState: result });
     await get().load();
     return result;
   },
 
   async refreshStats() {
-    const stats = await window.nexcode.learning.getStats();
+    const stats = await window.zenexcoder.learning.getStats();
     set({ stats });
     return stats;
   },

@@ -16,7 +16,7 @@ export default function ApiKeyManager() {
   const [status, setStatus] = useState({});
 
   async function test(provider) {
-    const result = await window.nexcode.ai.testProvider({ provider, apiKey: apiKeys[provider] });
+    const result = await window.zenexcoder.ai.testProvider({ provider, apiKey: apiKeys[provider] });
     setStatus((state) => ({ ...state, [provider]: result }));
   }
 
@@ -42,7 +42,7 @@ export default function ApiKeyManager() {
             <button onClick={() => saveApiKey(provider.id, apiKeys[provider.id] || '')}>
               <Save size={14} /> Save
             </button>
-            <button onClick={() => window.nexcode.app.openExternal(provider.url)}>Get Key</button>
+            <button onClick={() => window.zenexcoder.app.openExternal(provider.url)}>Get Key</button>
           </div>
           {status[provider.id] && (
             <span style={{ gridColumn: '2', color: status[provider.id].ok ? 'var(--success)' : 'var(--error)' }}>

@@ -29,8 +29,8 @@ export default function ImageDropzone({ onImageDropped, children }) {
       reader.onload = async () => {
         const rawDataUrl = reader.result;
         let compressed = { dataUrl: rawDataUrl, base64: rawDataUrl.split(',')[1] };
-        if (window.nexcode?.vision?.compressImage) {
-          compressed = await window.nexcode.vision.compressImage(rawDataUrl);
+        if (window.zenexcoder?.vision?.compressImage) {
+          compressed = await window.zenexcoder.vision.compressImage(rawDataUrl);
         }
         onImageDropped?.({
           type: 'image',

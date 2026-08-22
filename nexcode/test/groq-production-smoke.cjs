@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-const profile = path.join(process.env.APPDATA, 'nexcode');
+const profile = path.join(process.env.APPDATA, 'zenexcoder');
 const outputDir = path.join(__dirname, 'groq-production-smoke');
 function decrypt(value) {
   const encoded = value?.encoding === 'safeStorage' ? value.value : value?.encrypted ? value.data : null;
@@ -13,7 +13,7 @@ function decrypt(value) {
 async function main() {
   app.setPath('userData', profile);
   await app.whenReady();
-  const raw = JSON.parse(fs.readFileSync(path.join(profile, 'nexcode-secure.json'), 'utf8'));
+  const raw = JSON.parse(fs.readFileSync(path.join(profile, 'zenexcoder-secure.json'), 'utf8'));
   const settings = decrypt(raw.settings) || {};
   const apiKey = settings.apiKeys?.groq;
   if (!apiKey) throw new Error('Groq API key is not configured in the active profile.');

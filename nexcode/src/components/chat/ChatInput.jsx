@@ -21,9 +21,9 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
   const tokenCount = useMemo(() => estimateTokens(value) + attachments.reduce((total, item) => total + estimateTokens(item.content || ''), 0), [attachments, value]);
 
   async function addFileAttachment() {
-    const [filePath] = await window.nexcode.file.openDialog();
+    const [filePath] = await window.zenexcoder.file.openDialog();
     if (!filePath) return;
-    const result = await window.nexcode.file.read(filePath);
+    const result = await window.zenexcoder.file.read(filePath);
     setAttachments((items) => [
       ...items,
       { type: 'file', name: basename(filePath), filePath, content: result.content }
@@ -31,7 +31,7 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
   }
 
   async function addImageAttachment() {
-    const image = await window.nexcode.vision.openImageDialog();
+    const image = await window.zenexcoder.vision.openImageDialog();
     if (image) {
       setAttachments((items) => [...items, { ...image, type: 'image' }]);
     }
@@ -39,7 +39,7 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
 
   async function attachBrowserDOM() {
     try {
-      const state = await window.nexcode.browser.getDOM();
+      const state = await window.zenexcoder.browser.getDOM();
       if (state?.dom) {
         setAttachments((items) => [
           ...items,
@@ -51,10 +51,10 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
           }
         ]);
       } else {
-        await window.nexcode.browser.start();
+        await window.zenexcoder.browser.start();
       }
     } catch {
-      await window.nexcode.browser.start();
+      await window.zenexcoder.browser.start();
     }
   }
 
@@ -73,8 +73,8 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
     if (!rawContent && !attachments.length) return;
 
     let finalContent = rawContent;
-    if (autoOptimize && rawContent && window.nexcode?.prompt) {
-      const res = await window.nexcode.prompt.optimize(rawContent, { projectPath });
+    if (autoOptimize && rawContent && window.zenexcoder?.prompt) {
+      const res = await window.zenexcoder.prompt.optimize(rawContent, { projectPath });
       if (res?.ok) {
         finalContent = res.optimizedPrompt;
       }
@@ -94,8 +94,8 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
     if ((!rawContent && !attachments.length) || !onSwarm || swarmBusy) return;
 
     let finalContent = rawContent;
-    if (autoOptimize && rawContent && window.nexcode?.prompt) {
-      const res = await window.nexcode.prompt.optimize(rawContent, { projectPath });
+    if (autoOptimize && rawContent && window.zenexcoder?.prompt) {
+      const res = await window.zenexcoder.prompt.optimize(rawContent, { projectPath });
       if (res?.ok) {
         finalContent = res.optimizedPrompt;
       }
@@ -164,7 +164,7 @@ export default function ChatInput({ onSend, onSwarm, swarmBusy = false }) {
             submit();
           }
         }}
-        placeholder="Ask NexCode. Use @filename for open files."
+        placeholder="Ask ZezenexCoderr. Use @filename for open files."
       />
       <div className="chat-input-actions">
         <button className="icon-button" onClick={addFileAttachment} title="Attach file">

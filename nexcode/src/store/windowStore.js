@@ -22,7 +22,7 @@ export const useWindowStore = create((set, get) => ({
   async loadPopoutState() {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.window.getPopoutState();
+      const state = await window.zenexcoder.window.getPopoutState();
       set((current) => ({ ...normalizePopoutState(state, current), loading: false, error: '' }));
       return state;
     } catch (error) {
@@ -33,7 +33,7 @@ export const useWindowStore = create((set, get) => ({
   async togglePopout() {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.window.togglePopout();
+      const state = await window.zenexcoder.window.togglePopout();
       set((current) => ({ ...normalizePopoutState(state, current), loading: false, error: '' }));
       return state;
     } catch (error) {
@@ -44,7 +44,7 @@ export const useWindowStore = create((set, get) => ({
   async setPopoutHotkey(hotkey) {
     set({ loading: true, error: '' });
     try {
-      const state = await window.nexcode.window.setPopoutHotkey(hotkey);
+      const state = await window.zenexcoder.window.setPopoutHotkey(hotkey);
       set((current) => ({ ...normalizePopoutState(state, current), loading: false, error: '' }));
       return state;
     } catch (error) {

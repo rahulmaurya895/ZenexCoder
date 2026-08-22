@@ -7,11 +7,11 @@ export function useTheme() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    window.nexcode?.store?.set('theme', theme).catch(() => {});
+    window.zenexcoder?.store?.set('theme', theme).catch(() => {});
   }, [theme]);
 
   useEffect(() => {
-    window.nexcode?.store?.get('theme', 'dark').then(setTheme).catch(() => {});
+    window.zenexcoder?.store?.get('theme', 'dark').then(setTheme).catch(() => {});
   }, [setTheme]);
 
   return { theme, setTheme, toggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark') };

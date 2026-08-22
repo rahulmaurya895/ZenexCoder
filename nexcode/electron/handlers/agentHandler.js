@@ -107,7 +107,7 @@ function waitForApproval(action, permissions = {}) {
     const focused = BrowserWindow.getAllWindows().some((window) => window.isFocused());
     if (!focused) {
       showNotification(
-        'NexCode approval needed',
+        'ZezenexCoderr approval needed',
         action.description,
         { type: 'approval', id: action.id },
         permissions.showSystemNotifications !== false
@@ -326,7 +326,7 @@ async function executeStep(runState, step) {
     });
     if (['auto-review', 'full-access'].includes(runState.permissions?.mode)) {
       showNotification(
-        'NexCode made a change',
+        'ZezenexCoderr made a change',
         `${path.basename(step.filePath)} is ready for review.`,
         { type: 'review', stepId: step.id },
         runState.permissions?.showSystemNotifications !== false
@@ -461,7 +461,7 @@ export function registerAgentHandlers() {
   ipcMain.handle('agent:approval-request', async (_event, payload = {}) => {
     const action = { ...payload, id: payload.id || crypto.randomUUID(), createdAt: Date.now() };
     sendToAll('agent:approval-pending', action);
-    showNotification('NexCode approval needed', action.description || action.title || 'Approval requested', {
+    showNotification('ZezenexCoderr approval needed', action.description || action.title || 'Approval requested', {
       type: 'approval',
       id: action.id
     });
@@ -484,7 +484,7 @@ export function registerAgentHandlers() {
   });
 
   ipcMain.handle('notify:show', async (_event, payload = {}) => {
-    showNotification(payload.title || 'NexCode', payload.body || '', payload);
+    showNotification(payload.title || 'ZezenexCoderr', payload.body || '', payload);
     return { ok: true };
   });
 }

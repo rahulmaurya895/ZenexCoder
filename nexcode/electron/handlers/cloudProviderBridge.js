@@ -5,7 +5,7 @@ import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const STORE_NAME = 'nexcode-cloud-secrets.json';
+const STORE_NAME = 'zenexcoder-cloud-secrets.json';
 
 function storePath() {
   const dir = app.getPath('userData');
@@ -16,7 +16,7 @@ function storePath() {
 function fallbackKey() {
   return crypto
     .createHash('sha256')
-    .update(`nexcode-cloud:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
+    .update(`zenexcoder-cloud:${app.getPath('userData')}:${os.userInfo().username}:${process.env.COMPUTERNAME || os.hostname()}`)
     .digest();
 }
 

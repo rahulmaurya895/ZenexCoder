@@ -48,11 +48,11 @@ export default function EnvImportExport({ env, projectPath, store }) {
   const maskedCount = (env.vars || []).filter((item) => item.enabled !== false && item.masked).length;
 
   async function importFile() {
-    const [filePath] = await window.nexcode.file.openDialog({
+    const [filePath] = await window.zenexcoder.file.openDialog({
       filters: [{ name: 'Environment files', extensions: ['env', 'local', '*'] }]
     });
     if (!filePath) return;
-    const raw = await window.nexcode.env.readDotFile(filePath);
+    const raw = await window.zenexcoder.env.readDotFile(filePath);
     setPreview(parseDotEnv(raw));
   }
 
@@ -78,10 +78,10 @@ export default function EnvImportExport({ env, projectPath, store }) {
         title: 'Export env to .env file',
         description: `Export env to .env file\n${target}`
       },
-      () => window.nexcode.env.writeDotFile(target, content)
+      () => window.zenexcoder.env.writeDotFile(target, content)
     );
     if (!result) return;
-    await window.nexcode.notify.show({
+    await window.zenexcoder.notify.show({
       title: '.env exported',
       body: `${target}${maskedCount ? ` (${maskedCount} masked excluded)` : ''}`
     });
@@ -89,7 +89,7 @@ export default function EnvImportExport({ env, projectPath, store }) {
 
   async function copyEnvText() {
     await navigator.clipboard.writeText(serializeDotEnv(env.vars || []));
-    await window.nexcode.notify.show({
+    await window.zenexcoder.notify.show({
       title: '.env copied',
       body: maskedCount ? `${maskedCount} masked variables excluded.` : 'Environment text copied.'
     });

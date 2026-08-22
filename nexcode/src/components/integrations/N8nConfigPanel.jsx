@@ -14,15 +14,15 @@ export default function N8nConfigPanel() {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    if (window.nexcode?.n8n) {
+    if (window.zenexcoder?.n8n) {
       setLoading(true);
-      window.nexcode.n8n.getConfig()
+      window.zenexcoder.n8n.getConfig()
         .then((saved) => {
           if (saved) setConfig(saved);
         })
         .finally(() => setLoading(false));
 
-      const unbindStatus = window.nexcode.n8n.onStatusChanged((data) => {
+      const unbindStatus = window.zenexcoder.n8n.onStatusChanged((data) => {
         setStatus(data);
       });
       return () => unbindStatus?.();
@@ -32,7 +32,7 @@ export default function N8nConfigPanel() {
   async function handleSave() {
     setLoading(true);
     try {
-      await window.nexcode.n8n.saveConfig(config);
+      await window.zenexcoder.n8n.saveConfig(config);
       setStatus({ status: 'saved', message: 'n8n Configuration securely saved via safeStorage.' });
     } catch (err) {
       setStatus({ status: 'error', error: err.message });
@@ -45,8 +45,8 @@ export default function N8nConfigPanel() {
     setTesting(true);
     setStatus({ status: 'sending', message: 'Firing test webhook payload...' });
     try {
-      const res = await window.nexcode.n8n.triggerWebhook({
-        task: 'Connection Test from NexCode Connections Hub',
+      const res = await window.zenexcoder.n8n.triggerWebhook({
+        task: 'Connection Test from ZezenexCoderr Connections Hub',
         params: { test: true, triggeredBy: 'N8nConfigPanel' }
       });
       setStatus({ status: 'success', message: `Webhook HTTP 200 OK Response from ${res.url}` });
@@ -63,7 +63,7 @@ export default function N8nConfigPanel() {
         <Workflow size={18} className="text-accent" /> n8n External Cloud Automations
       </div>
       <p className="section-description">
-        Connect NexCode Swarm Architect to your n8n cloud workspace to trigger CI/CD pipelines and administrative workflows via webhooks.
+        Connect ZezenexCoderr Swarm Architect to your n8n cloud workspace to trigger CI/CD pipelines and administrative workflows via webhooks.
       </p>
 
       <div className="form-group">
@@ -82,7 +82,7 @@ export default function N8nConfigPanel() {
         <input
           type="text"
           className="settings-input"
-          placeholder="webhook/nexcode-swarm-trigger"
+          placeholder="webhook/zenexcoder-swarm-trigger"
           value={config.webhookPath}
           onChange={(e) => setConfig({ ...config, webhookPath: e.target.value })}
         />

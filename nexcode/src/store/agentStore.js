@@ -27,7 +27,7 @@ export const useAgentStore = create((set, get) => ({
       currentStepIndex: 0
     };
     set({ plan: normalizedPlan, runState: 'running', startedAt: Date.now(), completedAt: null });
-    return window.nexcode.agent.startRun({ ...normalizedPlan, ...options });
+    return window.zenexcoder.agent.startRun({ ...normalizedPlan, ...options });
   },
   hydrateRun(plan) {
     set({ plan, runState: 'running', startedAt: Date.now(), completedAt: null });
@@ -48,17 +48,17 @@ export const useAgentStore = create((set, get) => ({
   async pause() {
     const runId = get().plan.id;
     set({ runState: 'paused' });
-    if (runId) await window.nexcode.agent.control({ runId, action: 'pause' });
+    if (runId) await window.zenexcoder.agent.control({ runId, action: 'pause' });
   },
   async resume() {
     const runId = get().plan.id;
     set({ runState: 'running' });
-    if (runId) await window.nexcode.agent.control({ runId, action: 'resume' });
+    if (runId) await window.zenexcoder.agent.control({ runId, action: 'resume' });
   },
   async stop() {
     const runId = get().plan.id;
     set({ runState: 'stopped' });
-    if (runId) await window.nexcode.agent.control({ runId, action: 'stop' });
+    if (runId) await window.zenexcoder.agent.control({ runId, action: 'stop' });
   },
   async skipStep(id) {
     const runId = get().plan.id;
@@ -68,7 +68,7 @@ export const useAgentStore = create((set, get) => ({
         steps: state.plan.steps.map((step) => (step.id === id ? { ...step, status: 'skipped' } : step))
       }
     }));
-    if (runId) await window.nexcode.agent.control({ runId, action: 'skip', stepId: id });
+    if (runId) await window.zenexcoder.agent.control({ runId, action: 'skip', stepId: id });
   },
   editStep(id, patch) {
     const runId = get().plan.id;
@@ -79,7 +79,7 @@ export const useAgentStore = create((set, get) => ({
       }
     }));
     if (runId) {
-      window.nexcode.agent.control({ runId, action: 'edit-step', stepId: id, patch }).catch(() => {});
+      window.zenexcoder.agent.control({ runId, action: 'edit-step', stepId: id, patch }).catch(() => {});
     }
   },
   addApproval(approval) {
@@ -98,7 +98,7 @@ export const useAgentStore = create((set, get) => ({
           ? [...new Set([...state.sessionAllows, approval.actionType])]
           : state.sessionAllows
     }));
-    await window.nexcode.agent.respondApproval({
+    await window.zenexcoder.agent.respondApproval({
       actionId: id,
       decision,
       editedCommand: options.editedCommand || null,
@@ -110,7 +110,7 @@ export const useAgentStore = create((set, get) => ({
     if (decision === 'approve' && approval?.actionType === 'swarm_consensus' && approval.executionPlan?.steps?.length) {
       await get().startRun(approval.executionPlan, approval.runOptions || {});
     }
-    if (approval) await window.nexcode.store.set(`approval:last:${id}`, { approval, decision }).catch(() => {});
+    if (approval) await window.zenexcoder.store.set(`approval:last:${id}`, { approval, decision }).catch(() => {});
   },
   addFollowUp(content, mode = 'queue') {
     set((state) => ({ followUps: [...state.followUps, { id: `follow-${Date.now()}`, content, mode, createdAt: Date.now() }] }));
@@ -136,7 +136,7 @@ export const useAgentStore = create((set, get) => ({
     });
     const runId = get().plan.id;
     if (runId && insertedStep) {
-      window.nexcode.agent.control({ runId, action: 'insert-step', step: insertedStep }).catch(() => {});
+      window.zenexcoder.agent.control({ runId, action: 'insert-step', step: insertedStep }).catch(() => {});
     }
   },
   consumeNextQueuedFollowUp() {

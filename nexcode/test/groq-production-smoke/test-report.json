@@ -2,7 +2,7 @@
   "provider": "groq",
   "model": "llama-3.3-70b-versatile",
   "httpStatus": 200,
-  "generatedFile": "D:\\nexCode\\nexcode\\test\\groq-production-smoke\\calculator.mjs",
+  "generatedFile": "D:\\zenexCoder\\zenexcoder\\test\\groq-production-smoke\\calculator.mjs",
   "fileBytes": 96,
   "executionExitCode": 0,
   "executionOutput": "CALC_RESULT=42",

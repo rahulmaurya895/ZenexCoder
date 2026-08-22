@@ -23,7 +23,7 @@ function consensusMessage(payload = {}) {
     '### 📁 Saved Project Files:',
     fileList,
     '',
-    '### 🧪 How to Test in NexCode:',
+    '### 🧪 How to Test in ZezenexCoderr:',
     '1. Open your saved files directly from the left **File Tree**.',
     '2. Open **Terminal** (`Ctrl+\``) to execute scripts or launch dev server.',
     '3. Review full turn details in the **Agent Run** panel.'
@@ -32,11 +32,11 @@ function consensusMessage(payload = {}) {
 
 
 function ensureSwarmListeners() {
-  if (!disposers.length && window.nexcode?.swarm) {
+  if (!disposers.length && window.zenexcoder?.swarm) {
     disposers = [
-      window.nexcode.swarm.onAgentTurn((payload) => useSwarmStore.getState().applyTurn(payload)),
-      window.nexcode.swarm.onInternalMessage((payload) => useSwarmStore.getState().addInternalMessage(payload)),
-      window.nexcode.swarm.onConsensus(async (payload) => {
+      window.zenexcoder.swarm.onAgentTurn((payload) => useSwarmStore.getState().applyTurn(payload)),
+      window.zenexcoder.swarm.onInternalMessage((payload) => useSwarmStore.getState().addInternalMessage(payload)),
+      window.zenexcoder.swarm.onConsensus(async (payload) => {
         useSwarmStore.getState().applyConsensus(payload);
         useAppStore.getState().setRightPanelOpen(true);
         if (payload.taskId && !recordedConsensus.has(payload.taskId)) {
@@ -44,8 +44,8 @@ function ensureSwarmListeners() {
           await useChatStore.getState().addMessage('assistant', consensusMessage(payload), [], payload.modelId || null);
         }
       }),
-      window.nexcode.swarm.onHalt((payload) => useSwarmStore.getState().applyHalt(payload)),
-      window.nexcode.swarm.onError((payload) => useSwarmStore.getState().applyError(payload))
+      window.zenexcoder.swarm.onHalt((payload) => useSwarmStore.getState().applyHalt(payload)),
+      window.zenexcoder.swarm.onError((payload) => useSwarmStore.getState().applyError(payload))
     ].filter(Boolean);
   }
   listenerUsers += 1;

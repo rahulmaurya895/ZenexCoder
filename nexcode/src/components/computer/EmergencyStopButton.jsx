@@ -8,8 +8,8 @@ export default function EmergencyStopButton({ onStop }) {
     if (['running', 'paused'].includes(agent.runState)) {
       await agent.stop().catch(() => {});
     }
-    await window.nexcode.ai?.abortAll?.('AI CONTROL TERMINATED').catch(() => {});
-    await window.nexcode.notify?.show?.({ title: 'AI CONTROL TERMINATED', body: 'Computer Use controls locked.' }).catch(() => {});
+    await window.zenexcoder.ai?.abortAll?.('AI CONTROL TERMINATED').catch(() => {});
+    await window.zenexcoder.notify?.show?.({ title: 'AI CONTROL TERMINATED', body: 'Computer Use controls locked.' }).catch(() => {});
   }
 
   return (

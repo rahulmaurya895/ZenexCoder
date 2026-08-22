@@ -37,7 +37,7 @@ export const useQaStore = create((set, get) => ({
       projectPath: get().projectPath()
     });
     try {
-      const result = await window.nexcode.qa.runScenario(scenario);
+      const result = await window.zenexcoder.qa.runScenario(scenario);
       set({ result, active: false });
       return result;
     } catch (error) {
@@ -47,7 +47,7 @@ export const useQaStore = create((set, get) => ({
   },
 
   stop() {
-    return window.nexcode.qa.stop().catch(() => {});
+    return window.zenexcoder.qa.stop().catch(() => {});
   },
 
   applyLog(payload = {}) {

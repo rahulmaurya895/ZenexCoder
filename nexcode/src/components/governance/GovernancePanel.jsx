@@ -6,12 +6,12 @@ export default function GovernancePanel() {
   const [policy, setPolicy] = useState({ blockUnsafeCode: true, warnOnSecretDetection: true });
 
   useEffect(() => {
-    window.nexcode.audit.getLogs().then(setLogs).catch(() => {});
-    window.nexcode.policy.getStatus().then(setPolicy).catch(() => {});
+    window.zenexcoder.audit.getLogs().then(setLogs).catch(() => {});
+    window.zenexcoder.policy.getStatus().then(setPolicy).catch(() => {});
   }, []);
 
   async function toggle(ruleId, enabled) {
-    const next = await window.nexcode.policy.updateSetting({ ruleId, enabled });
+    const next = await window.zenexcoder.policy.updateSetting({ ruleId, enabled });
     setPolicy(next);
   }
 

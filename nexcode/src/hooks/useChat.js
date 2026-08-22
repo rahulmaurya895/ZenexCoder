@@ -67,7 +67,7 @@ export function useChat() {
         useSpeculativeStore.getState().clearEntry(cached.triggerHash);
         return;
       }
-      const pluginState = await window.nexcode.store.get('plugins', { customPlugins: [], enabled: {} }).catch(() => ({ customPlugins: [], enabled: {} }));
+      const pluginState = await window.zenexcoder.store.get('plugins', { customPlugins: [], enabled: {} }).catch(() => ({ customPlugins: [], enabled: {} }));
       const customPlugin = (pluginState.customPlugins || []).find(
         (plugin) =>
           plugin.trigger &&
@@ -90,7 +90,7 @@ export function useChat() {
         setNotice('Old messages removed to fit context window');
       }
       const providerKey = activeModel.provider === 'google' ? 'google' : activeModel.provider;
-      const request = window.nexcode.ai.stream(
+      const request = window.zenexcoder.ai.stream(
         {
           provider: activeModel.provider,
           modelId: activeModel.modelId,
@@ -149,7 +149,7 @@ export function useChat() {
                   const cleanName = fileName.replace(/^[/\\]+/, '').trim();
                   const targetPath = `${targetFolder}/${cleanName}`;
                   try {
-                    await window.nexcode.file.write(targetPath, block.code);
+                    await window.zenexcoder.file.write(targetPath, block.code);
                     if (projectPath) {
                       await useProjectStore.getState().loadFiles(projectPath);
                     }

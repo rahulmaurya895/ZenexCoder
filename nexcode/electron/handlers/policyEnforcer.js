@@ -29,6 +29,13 @@ const COMMAND_INJECTION_PATTERNS = [
   /Start-Process.*(?:\.exe|\.bat|\.vbs|temp)/i
 ];
 
+const SSRF_METADATA_PATTERNS = [
+  /169\.254\.169\.254/i,
+  /metadata\.google\.internal/i,
+  /100\.100\.100\.200/i,
+  /fd00:ec2::254/i
+];
+
 export function enforcePolicies(text = '') {
   const content = String(text || '');
   
@@ -39,6 +46,17 @@ export function enforcePolicies(text = '') {
         ok: false,
         rule: 'system_destruction_blocked',
         message: 'Security Policy Violation: Malicious or destructive OS command detected. Actions targeting System directories (System32, Root, Format) are strictly blocked.'
+      };
+    }
+  }
+
+  // Check for SSRF & Cloud Metadata Exploits
+  for (const pattern of SSRF_METADATA_PATTERNS) {
+    if (pattern.test(content)) {
+      return {
+        ok: false,
+        rule: 'ssrf_metadata_blocked',
+        message: 'Security Policy Violation: SSRF / Cloud Metadata Exfiltration blocked. Access to internal instance metadata endpoints (169.254.169.254) is strictly prohibited.'
       };
     }
   }

@@ -93,6 +93,11 @@ function normalizeUrl(value = '') {
   let trimmed = String(value || '').trim();
   if (!trimmed) throw new Error('URL is required.');
 
+  // SSRF & Cloud Metadata Protection
+  if (/169\.254\.169\.254|metadata\.google\.internal|100\.100\.100\.200|fd00:ec2::254/i.test(trimmed)) {
+    throw new Error('Security Policy Violation: SSRF blocked. Access to cloud instance metadata service (169.254.169.254) is strictly prohibited.');
+  }
+
   // Auto-correct common mistake: gemini.com / gemini.com/login -> https://gemini.google.com/app
   if (/^https?:\/\/(www\.)?gemini\.com(\/.*)?$/i.test(trimmed) || /^gemini\.com(\/.*)?$/i.test(trimmed)) {
     return 'https://gemini.google.com/app';

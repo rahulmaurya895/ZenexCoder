@@ -2,7 +2,8 @@
   "name": "zenexcoder",
   "version": "1.0.0",
   "description": "AI-Powered Developer Environment",
-  "author": "ZenexCoder",
+  "author": "Raahool Mauryaa (Independent Developer)",
+  "license": "MIT",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {

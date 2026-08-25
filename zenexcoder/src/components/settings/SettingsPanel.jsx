@@ -60,6 +60,23 @@ export default function SettingsPanel() {
         <span className="panel-title">Settings</span>
       </div>
       <div className="panel-body settings-grid">
+        <div className="settings-section" style={{ gridColumn: '1 / -1', background: 'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(147,51,234,0.08) 100%)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '8px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ fontSize: '24px' }}>⚡</div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#60A5FA' }}>ZenexCoder v1.0.0</div>
+                <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Autonomous AI-Native Desktop IDE & Multi-Agent Swarm Platform</div>
+              </div>
+            </div>
+            <span style={{ fontSize: '11px', background: 'rgba(34,197,94,0.2)', color: '#4ADE80', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(34,197,94,0.3)' }}>MIT Licensed</span>
+          </div>
+          <div style={{ fontSize: '13px', marginTop: '10px', color: '#E5E7EB', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div>👨‍💻 <strong>Creator & Architect:</strong> <span style={{ color: '#F3F4F6' }}>Raahool Mauryaa</span> <span style={{ color: '#9CA3AF' }}>(Independent Developer)</span></div>
+            <div>🔗 <strong>Official Repository:</strong> <a href="https://github.com/rahulmaurya895/ZenexCoder" target="_blank" rel="noreferrer" style={{ color: '#38BDF8', textDecoration: 'underline' }}>github.com/rahulmaurya895/ZenexCoder</a></div>
+            <div>🛡️ <strong>Copyright:</strong> © 2026 Raahool Mauryaa. All rights reserved.</div>
+          </div>
+        </div>
         <AppearanceSettings />
         <ChaosMonitor />
         <ShadowTrainerUI />

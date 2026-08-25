@@ -66,6 +66,20 @@ npx electron test/aiServiceTest.js
 
 ---
 
+## 👨‍💻 Author & Creator
+**Raahool Mauryaa** *(Independent Developer)*  
+- **Role:** Creator & Lead System Architect
+- **Repository:** [github.com/rahulmaurya895/ZenexCoder](https://github.com/rahulmaurya895/ZenexCoder)
+- **Project:** ZenexCoder AI-Powered Autonomous IDE
+
+---
+
+## 📜 License
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.  
+Copyright © 2026 **Raahool Mauryaa (Independent Developer)**. All rights reserved.
+
+---
+
 ## 📂 Project Structure
 
 ```

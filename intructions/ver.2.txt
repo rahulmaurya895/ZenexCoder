@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER V2 ARCHITECTURE & FEATURE IMPLEMENTATION LOG (VERSION 2.0)
+   ZEZENEXCODERR V2 ARCHITECTURE & FEATURE IMPLEMENTATION LOG (VERSION 2.0)
 ================================================================================
 CREATED AT: 2026-08-10
 STATUS: ACTIVE & CONTINUOUSLY UPDATED
@@ -7,7 +7,7 @@ STATUS: ACTIVE & CONTINUOUSLY UPDATED
 
 1. OVERVIEW
 This document tracks all new features, architectural upgrades, low-RAM optimizations,
-security enhancements, and UX improvements implemented in ZezenexCoderr beyond the initial
+security enhancements, and UX improvements implemented in ZenexCoder beyond the initial
 blueprints (1.txt to 4.5.txt).
 
 ================================================================================
@@ -34,7 +34,7 @@ blueprints (1.txt to 4.5.txt).
 
 [UPDATED: 2026-08-10] — MODULE 4: HYPER-PERSONALIZED SHADOW AI (STYLE-AWARE AUTOCOMPLETE)
 - Created `shadowAIHandler.js` in Electron main process to fetch GitHub commit patches and parse AST style heuristics (indentation spaces/tabs, string quotes ' vs ", naming camelCase/snake_case).
-- Encrypted Profile Storage: Style heuristics stored in `zenexcoder-shadow-style-profile.json` using `safeStorage` without raw code plain-text retention.
+- Encrypted Profile Storage: Style heuristics stored in `zezenexcoderr-shadow-style-profile.json` using `safeStorage` without raw code plain-text retention.
 - Style Profile Injection: Updated `speculativeHandler.js` (`startSwarmRun()`) to prepend `buildStylePromptPrefix()` to autocomplete prompts, forcing inline completions to strictly mirror user formatting conventions.
 - Created `ShadowTrainerUI.jsx` in Settings / Integrations Hub for selecting baseline GitHub repositories and authorizing access via GitHub PAT.
 
@@ -87,5 +87,5 @@ blueprints (1.txt to 4.5.txt).
 ================================================================================
 3. CONTINUOUS UPDATE RULE FOR AGENT
 ================================================================================
-- Every time a new feature, bug fix, or optimization is implemented in ZezenexCoderr, the AI Agent must log the changes in this `ver.2.txt` file before concluding the task.
+- Every time a new feature, bug fix, or optimization is implemented in ZenexCoder, the AI Agent must log the changes in this `ver.2.txt` file before concluding the task.
 ================================================================================

@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER — PHASE 3 (PART 3 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZEZENEXCODERR — PHASE 3 (PART 3 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "SPECULATIVE EXECUTION" (Zero-Latency Time Travel)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -33,7 +33,7 @@ stare at a loading spinner for 30 seconds while the AI thinks. That is slow.
 Speculative Execution is how modern CPUs work. The IDE "guesses" what you are 
 going to do next based on your current context. 
 Example: You paste an error log into the terminal. Before you even open the 
-Chat Panel to ask "How do I fix this?", the ZezenexCoderr Speculative Watcher has 
+Chat Panel to ask "How do I fix this?", the ZenexCoder Speculative Watcher has 
 already noticed the error, silently sent it to the Swarm, and the Swarm has 
 already written the fix. 
 When you finally press Ctrl+Space or open the chat, the answer appears in 
@@ -50,7 +50,7 @@ run if the user starts heavily compiling or running local servers.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 3)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/

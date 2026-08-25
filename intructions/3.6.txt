@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER — PHASE 3 (PART 6 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZEZENEXCODERR — PHASE 3 (PART 6 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "REALTIME FULL-DUPLEX AUDIO" (The J.A.R.V.I.S Protocol)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -47,7 +47,7 @@ millisecond you start speaking.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 6)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/

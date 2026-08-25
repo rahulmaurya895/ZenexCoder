@@ -1,6 +1,6 @@
 ================================================================================
-   ZENEXCODER — PHASE 2B (PART 1 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of ZENEXCODER_PHASE2A_BUILD_INSTRUCTIONS.txt
+   ZEZENEXCODERR — PHASE 2B (PART 1 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZEZENEXCODERR_PHASE2A_BUILD_INSTRUCTIONS.txt
    THEME: "INTEGRATIONS HUB FOUNDATION" — Connections Panel + Git Core
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -98,7 +98,7 @@ electron/handlers/
 SECTION 2: CONNECTIONS HUB (REGISTRY SHELL)
 ================================================================================
 
-Purpose: a single page where the user can SEE every integration ZezenexCoderr
+Purpose: a single page where the user can SEE every integration ZenexCoder
 supports, its current status, and connect/configure it. Phase 2B Parts
 2–10 will plug their real settings UIs into the cards created here.
 
@@ -341,6 +341,6 @@ START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 1 OF 10
-NEXT FILE: ZENEXCODER_PHASE2B_PART2_BUILD_INSTRUCTIONS.txt (Git Worktrees +
+NEXT FILE: ZEZENEXCODERR_PHASE2B_PART2_BUILD_INSTRUCTIONS.txt (Git Worktrees +
 Branch Management UI)
 ================================================================================

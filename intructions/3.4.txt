@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER — PHASE 3 (PART 4 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZEZENEXCODERR — PHASE 3 (PART 4 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "ZERO-TOUCH SELF-HEALING" (Prod-to-Dev Loop)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -7,7 +7,7 @@
 CONTEXT FOR CODEX:
 Phase 3 Parts 1-3 built the Swarm, Knowledge Graph, and Speculative Execution.
 Phase 3 SCOPE (build now):
-  1. Production Telemetry Integration — Connect ZezenexCoderr directly to Sentry, 
+  1. Production Telemetry Integration — Connect ZenexCoder directly to Sentry, 
      Datadog, or generic error APIs to pull live production crash reports.
   2. Autonomous Worktree Spawning — When a critical error arrives, automatically 
      create a background Git Worktree specifically for this bug.
@@ -33,12 +33,12 @@ their Git branch, try to reproduce the bug, write a fix, run tests, push the
 branch, and open a Pull Request.
 
 With Zero-Touch Self-Healing, the IDE does the 3 AM shift.
-1. ZezenexCoderr intercepts the Sentry alert.
+1. ZenexCoder intercepts the Sentry alert.
 2. It silently creates a background folder (Git Worktree) so it doesn't mess 
    up whatever you were currently working on.
 3. The Swarm Engine reads the stack trace, finds the exact file in the Vector DB, 
    fixes the code, and writes a test.
-4. ZezenexCoderr pushes the fix to GitHub and opens a Pull Request.
+4. ZenexCoder pushes the fix to GitHub and opens a Pull Request.
 5. You wake up at 8 AM. You check your phone. You see: "Critical Prod Bug 
    fixed. PR #402 is awaiting your review." You review the code, click Merge, 
    and go back to sleep. The AI never deploys to prod (for safety); it only 
@@ -48,7 +48,7 @@ With Zero-Touch Self-Healing, the IDE does the 3 AM shift.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 4)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/
@@ -95,7 +95,7 @@ Goal: Isolate the fix in the background without touching the user's active edito
 3.1 autoFixer.js (electron/handlers/)
   When a new critical incident is fetched:
   - Step 1 (Git Isolation): Call `gitWorktreeAdd` (Phase 2B Part 2) to create 
-    a background folder: `.zenexcoder_worktrees/fix-sentry-issue-<id>`.
+    a background folder: `.zezenexcoderr_worktrees/fix-sentry-issue-<id>`.
   - Step 2 (Swarm Context): Pass the `stackTrace` to the `swarmHandler.js`.
   - Step 3 (System Prompt override): Inject a specific intent to the Architect:
     "You are debugging a production crash. Below is the stack trace. Analyze 
@@ -176,7 +176,7 @@ SECTION 7: IMPLEMENTATION ORDER
 8. End-to-end test (Simulated):
    - Inject a mock Sentry payload into `incidentHandler.js`.
    - Verify the UI shows the new incident.
-   - Verify `.zenexcoder_worktrees/` is created in your project directory.
+   - Verify `.zezenexcoderr_worktrees/` is created in your project directory.
    - Verify the Swarm generates a fix and commits it.
    - Verify a Pull Request is actually created on your test GitHub repository.
 

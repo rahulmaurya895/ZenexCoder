@@ -1,6 +1,6 @@
 ================================================================================
-   ZENEXCODER — PHASE 2B (PART 5 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of ZENEXCODER_PHASE2B_PART4_BUILD_INSTRUCTIONS.txt
+   ZEZENEXCODERR — PHASE 2B (PART 5 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZEZENEXCODERR_PHASE2B_PART4_BUILD_INSTRUCTIONS.txt
    THEME: "MCP SERVERS" — Tool Invocation + Agent/Permissions Integration
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -31,7 +31,7 @@ wired to real state/IPC.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 5 ONLY)
 ================================================================================
 
-Modify existing files in the zenexcoder/ structure:
+Modify existing files in the zezenexcoderr/ structure:
 
 src/
 ├── services/
@@ -210,5 +210,5 @@ START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 5 OF 10
-NEXT FILE: ZENEXCODER_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt (Browser Integration)
+NEXT FILE: ZEZENEXCODERR_PHASE2B_PART6_BUILD_INSTRUCTIONS.txt (Browser Integration)
 ================================================================================

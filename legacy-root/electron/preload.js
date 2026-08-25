@@ -1,7 +1,7 @@
 // preload.js – expose safe IPC methods to renderer
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('nexcode', {
+contextBridge.exposeInMainWorld('zenexcoder', {
   // AI streaming
   aiStream: (payload) => ipcRenderer.invoke('ai:stream', payload),
   // Token listener for streamed tokens

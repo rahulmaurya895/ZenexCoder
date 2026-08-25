@@ -1,6 +1,6 @@
-# 🚀 ZezenexCoderr - AI-Powered Developer Environment
+# 🚀 ZenexCoder - AI-Powered Developer Environment
 
-ZezenexCoderr is a production-grade, local-first, AI-native desktop IDE built with **Electron**, **React**, **Vite**, and **Tailwind CSS**. It combines multi-provider AI streaming (OpenAI, Anthropic, Google Gemini, Ollama), integrated terminal command execution, visual screen analysis, vector search, and local MCP tool integrations into a unified environment.
+ZenexCoder is a production-grade, local-first, AI-native desktop IDE built with **Electron**, **React**, **Vite**, and **Tailwind CSS**. It combines multi-provider AI streaming (OpenAI, Anthropic, Google Gemini, Ollama), integrated terminal command execution, visual screen analysis, vector search, and local MCP tool integrations into a unified environment.
 
 ---
 
@@ -69,9 +69,9 @@ npx electron test/aiServiceTest.js
 ## 📂 Project Structure
 
 ```
-zenexCoder/
+ZenexCoder/
 ├── run_app.bat                   # Instant Windows dev launcher
-└── zenexcoder/                      # Primary Application Package
+└── zenexcoder/                   # Primary Application Package
     ├── electron/
     │   ├── main.js               # Electron main process & IPC router
     │   ├── preload.js            # Secure contextBridge IPC exposure

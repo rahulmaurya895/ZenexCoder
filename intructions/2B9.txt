@@ -1,6 +1,6 @@
 ================================================================================
-   ZENEXCODER — PHASE 2B (PART 9 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of ZENEXCODER_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt
+   ZEZENEXCODERR — PHASE 2B (PART 9 of 10) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZEZENEXCODERR_PHASE2B_PART8_BUILD_INSTRUCTIONS.txt
    THEME: "AGENT ENVIRONMENT, SHELL SELECTOR & POPOUT WINDOW"
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -28,7 +28,7 @@ wired to real state/IPC.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PART 9 ONLY)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/
@@ -67,9 +67,9 @@ ephemeral environment. We will use Windows Sandbox (built into Windows 10/11 Pro
     - Generates a dynamic `.wsb` (Windows Sandbox configuration) XML file.
     - Uses `<MappedFolders>` to mount the current `projectPath` into the Sandbox 
       as Read/Write.
-    - Uses `<LogonCommand>` to inject a small ZezenexCoderr listener script into the 
+    - Uses `<LogonCommand>` to inject a small ZenexCoder listener script into the 
       Sandbox so the main app can send terminal commands into the VM.
-    - Spawns the Sandbox using `child_process.exec('start "" "zenexcoder_temp.wsb"')`.
+    - Spawns the Sandbox using `child_process.exec('start "" "zezenexcoderr_temp.wsb"')`.
   - IPC function: `sandboxStop()`
     - Kills the sandbox process.
 
@@ -110,7 +110,7 @@ SECTION 4: POPOUT WINDOW & GLOBAL HOTKEY
 ================================================================================
 
 Goal: Allow the user to press Alt+Space anywhere on their computer to summon 
-the ZezenexCoderr Chat/Agent interface without switching virtual desktops.
+the ZenexCoder Chat/Agent interface without switching virtual desktops.
 
 4.1 popoutWindow.js (electron/windows/)
   - Create a new `BrowserWindow`:
@@ -188,6 +188,6 @@ START BUILDING NOW. FOLLOW SECTION 7 IN ORDER.
 
 ================================================================================
 END OF PHASE 2B — PART 9 OF 10
-NEXT FILE: ZENEXCODER_PHASE2B_PART10_BUILD_INSTRUCTIONS.txt (Dictation, Notification 
+NEXT FILE: ZEZENEXCODERR_PHASE2B_PART10_BUILD_INSTRUCTIONS.txt (Dictation, Notification 
 Center, & Final Polish)
 ================================================================================

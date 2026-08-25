@@ -1,7 +1,7 @@
 ================================================================================
-   ZENEXCODER — PHASE 2A BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
-   Continuation of ZENEXCODER_BUILD_INSTRUCTIONS.txt (Phase 1)
-   THEME: "AGENT WORKFLOW CORE" — Make ZezenexCoderr behave like a real agentic
+   ZEZENEXCODERR — PHASE 2A BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   Continuation of ZEZENEXCODERR_BUILD_INSTRUCTIONS.txt (Phase 1)
+   THEME: "AGENT WORKFLOW CORE" — Make ZenexCoder behave like a real agentic
    coding assistant (Claude Code / Cursor Agent style), not just a chatbot.
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -28,7 +28,7 @@ PHASE 2A SCOPE (build now):
 DO NOT touch Phase 2B items in this file (MCP servers, Browser integration,
 Computer use, Hooks/Connections/Git/Environments/Worktrees, Agent environment
 selector, terminal shell selector, popout window, dictation, notification
-center). Those come in ZENEXCODER_PHASE2B_BUILD_INSTRUCTIONS.txt.
+center). Those come in ZEZENEXCODERR_PHASE2B_BUILD_INSTRUCTIONS.txt.
 
 NO FAKE UI. Every toggle, button, and panel below must be FUNCTIONAL and
 wired to real state/IPC — not a static label.
@@ -37,7 +37,7 @@ wired to real state/IPC — not a static label.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE
 ================================================================================
 
-Add these files to the existing zenexcoder/ structure:
+Add these files to the existing zezenexcoderr/ structure:
 
 src/
 ├── components/
@@ -148,7 +148,7 @@ via a shield icon in TopBar (shows current mode + dropdown):
        Destructive actions still require approval (same as Auto-review) —
        this floor cannot be disabled from the UI.
      - Show a persistent amber banner in TopBar while Full access is
-       active: "Full access enabled — ZezenexCoderr can modify files and run
+       active: "Full access enabled — ZenexCoder can modify files and run
        commands without asking."
 
 Per-action override:
@@ -186,7 +186,7 @@ Two layers:
      - Fired when: (a) an approval is requested while the app/window is
        not focused, (b) Auto-review batch completes, (c) Full access
        performs a high-risk-adjacent action.
-     - Toast click -> focuses ZezenexCoderr window and scrolls to the relevant
+     - Toast click -> focuses ZenexCoder window and scrolls to the relevant
        ApprovalRequest or Review entry.
      - Settings toggle: "Show system notifications for approvals"
        (default ON). Respect OS-level Do Not Disturb if Electron reports it.

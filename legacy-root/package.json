@@ -1,5 +1,5 @@
 {
-  "name": "nexcode",
+  "name": "zenexcoder",
   "version": "1.0.0",
   "description": "AI-Powered Developer Environment",
   "main": "electron/main.js",

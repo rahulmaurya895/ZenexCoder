@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER — PHASE 3 (PART 1 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZEZENEXCODERR — PHASE 3 (PART 1 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "MULTI-AGENT SWARM INTELLIGENCE" (The Virtual Startup)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -54,7 +54,7 @@ to speak. One brain, wearing four different hats sequentially.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 1)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/

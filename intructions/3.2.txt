@@ -1,5 +1,5 @@
 ================================================================================
-   ZENEXCODER — PHASE 3 (PART 2 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
+   ZEZENEXCODERR — PHASE 3 (PART 2 of 6) BUILD INSTRUCTIONS FOR AI AGENT (CODEX)
    THEME: "GLOBAL SEMANTIC KNOWLEDGE GRAPH" (RAG on Steroids)
    READ THIS ENTIRE FILE BEFORE WRITING A SINGLE LINE OF CODE.
 ================================================================================
@@ -51,7 +51,7 @@ before writing a single line of code. It feels like magic.
 SECTION 1: NEW / UPDATED FOLDER STRUCTURE (PHASE 3, PART 2)
 ================================================================================
 
-Add/modify these files in the zenexcoder/ structure:
+Add/modify these files in the zezenexcoderr/ structure:
 
 src/
 ├── components/
@@ -91,7 +91,7 @@ Goal: A robust, local storage mechanism for mathematical arrays (vectors).
   - Returns an array of floats (e.g., length 768 or 1024 depending on model).
 
 2.3 vectorDbHandler.js (electron/handlers/)
-  - Initialize LanceDB in the user's `.zenexcoder_data/vector_db/` directory.
+  - Initialize LanceDB in the user's `.zezenexcoderr_data/vector_db/` directory.
   - Create two primary tables (collections):
     1. `code_chunks`: 
        Schema: { id, project_path, file_path, content, vector, last_modified }
